@@ -55,7 +55,7 @@ void jsonCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
   }
 
   //server.httpSuccess(false, "application/json");
-  server.httpSuccess();
+  server.httpSuccess("application/json");
   
   if (type == WebServer::HEAD)
     return;
