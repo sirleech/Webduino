@@ -472,7 +472,8 @@ void WebServer::httpSuccess(const char *contentType,
   P(successMsg1) =
     "HTTP/1.0 200 OK" CRLF
     WEBDUINO_SERVER_HEADER
-    "Content-Type: ";
+    "Access-Control-Allow-Origin: *" CRLF
+	"Content-Type: ";
 
   printP(successMsg1);
   print(contentType);
