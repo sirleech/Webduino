@@ -4,13 +4,14 @@
  * To use this demo,  enter one of the following USLs into your browser.
  * Replace "host" with the IP address assigned to the Arduino.
  *
- * http://host/demo
+ * http://host/
+ * http://host/json
  *
  * This URL brings up a display of the values READ on digital pins 0-9
  * and analog pins 0-5.  This is done with a call to defaultCmd.
  * 
  * 
- * http://host/demo/form
+ * http://host/form
  *
  * This URL also brings up a display of the values READ on digital pins 0-9
  * and analog pins 0-5.  But it's done as a form,  by the "formCmd" function,
@@ -38,7 +39,7 @@ static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 // CHANGE THIS TO MATCH YOUR HOST NETWORK
 static uint8_t ip[] = { 192, 168, 1, 210 };
 
-#define PREFIX "/demo"
+#define PREFIX ""
 
 WebServer webserver(PREFIX, 80);
 
@@ -53,7 +54,8 @@ void jsonCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
     return;
   }
 
-  server.httpSuccess(false, "application/json");
+  //server.httpSuccess(false, "application/json");
+  server.httpSuccess();
   
   if (type == WebServer::HEAD)
     return;
