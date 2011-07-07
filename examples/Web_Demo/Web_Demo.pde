@@ -20,6 +20,8 @@
  * 
  */
 
+#include "SPI.h" // new include
+#include "avr/pgmspace.h" // new include
 #include "Ethernet.h"
 #include "WebServer.h"
 
@@ -34,7 +36,7 @@ inline Print &operator <<(Print &obj, T arg)
 static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
 // CHANGE THIS TO MATCH YOUR HOST NETWORK
-static uint8_t ip[] = { 192, 168, 1, 64 };
+static uint8_t ip[] = { 192, 168, 1, 210 };
 
 #define PREFIX "/demo"
 

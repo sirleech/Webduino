@@ -1,5 +1,7 @@
 /* Web_Buzzer.pde - example sketch for Webduino library */
 
+#include "SPI.h" // new include
+#include "avr/pgmspace.h" // new include
 #include "Ethernet.h"
 #include "WebServer.h"
 
@@ -7,7 +9,7 @@
 static uint8_t mac[6] = { 0x02, 0xAA, 0xBB, 0xCC, 0x00, 0x22 };
 
 // CHANGE THIS TO MATCH YOUR HOST NETWORK
-static uint8_t ip[4] = { 192, 168, 42, 51 }; // area 51!
+static uint8_t ip[4] = { 192, 168, 1, 210 }; // area 51!
 
 /* all URLs on this server will start with /buzz because of how we
  * define the PREFIX value.  We also will listen on port 80, the

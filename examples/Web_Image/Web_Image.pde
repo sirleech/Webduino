@@ -16,12 +16,14 @@
  * image request.
  */
 
+#include "SPI.h" // new include
+#include "avr/pgmspace.h" // new include
 #include "Ethernet.h"
 #include "WebServer.h"
 
 // CHANGE THIS TO YOUR OWN UNIQUE VALUE
 static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-static uint8_t ip[] = { 192, 168, 1, 64 };
+static uint8_t ip[] = { 192, 168, 1, 210 };
 
 WebServer webserver("", 80);
 
