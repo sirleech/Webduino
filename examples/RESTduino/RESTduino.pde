@@ -53,7 +53,8 @@ void jsonCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
   }
 
   //JSON with wildcard CORS
-  server.httpSuccess("application/json","Access-Control-Allow-Origin: *");
+  server.httpSuccess("application/json");
+  //server.httpSuccess("application/json","Access-Control-Allow-Origin: *");
   
   if (type == WebServer::HEAD)
     return;
