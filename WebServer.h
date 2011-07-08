@@ -27,6 +27,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include "avr/pgmspace.h"
 
 /********************************************************************
  * CONFIGURATION
