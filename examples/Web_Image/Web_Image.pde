@@ -16,8 +16,7 @@
  * image request.
  */
 
-#include "SPI.h" // new include
-#include "avr/pgmspace.h" // new include
+#include "SPI.h"
 #include "Ethernet.h"
 #include "WebServer.h"
 
