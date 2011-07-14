@@ -22,6 +22,8 @@
    THE SOFTWARE.
 */
 
+#include <WebServer.h>
+
 WebServer::WebServer(const char *urlPrefix, int port) :
   m_server(port),
   m_client(255),
