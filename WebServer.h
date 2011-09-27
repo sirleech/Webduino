@@ -29,8 +29,8 @@
 #include <stdlib.h>
 #include "avr/pgmspace.h"
 
-#include <Client.h>
-#include <Server.h>
+#include <EthernetClient.h>
+#include <EthernetServer.h>
 
 /********************************************************************
  * CONFIGURATION
@@ -200,14 +200,14 @@ public:
   void httpSeeOther(const char *otherURL);
 
   // implementation of write used to implement Print interface
-  virtual void write(uint8_t);
-  virtual void write(const char *str);
-  virtual void write(const uint8_t *buffer, size_t size);
-  void write(const char *data, size_t length);
+  virtual size_t write(uint8_t);
+  virtual size_t write(const char *str);
+  virtual size_t write(const uint8_t *buffer, size_t size);
+  size_t write(const char *data, size_t length);
 
 private:
-  Server m_server;
-  Client m_client;
+  EthernetServer m_server;
+  EthernetClient m_client;
   const char *m_urlPrefix;
 
   char m_pushback[32];
