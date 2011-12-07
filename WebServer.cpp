@@ -263,8 +263,10 @@ void WebServer::httpSuccess(const char *contentType,
   printP(successMsg1);
   print(contentType);
   printCRLF();
-  if (extraHeaders)
+  if (extraHeaders) {
     print(extraHeaders);
+    printCRLF();
+  }
   printCRLF();
 }
 
