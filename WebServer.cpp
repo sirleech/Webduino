@@ -60,24 +60,24 @@ void WebServer::addCommand(const char *verb, Command *cmd)
   }
 }
 
-void WebServer::write(uint8_t ch)
+size_t WebServer::write(uint8_t ch)
 {
-  m_client.write(ch);
+  return m_client.write(ch);
 }
 
-void WebServer::write(const char *str)
+size_t WebServer::write(const char *str)
 {
-  m_client.write(str);
+  return m_client.write(str);
 }
 
-void WebServer::write(const uint8_t *buffer, size_t size)
+size_t WebServer::write(const uint8_t *buffer, size_t size)
 {
-  m_client.write(buffer, size);
+  return m_client.write(buffer, size);
 }
 
-void WebServer::write(const char *buffer, size_t length)
+size_t WebServer::write(const char *buffer, size_t length)
 {
-  m_client.write((const uint8_t *)buffer, length);
+  return m_client.write((const uint8_t *)buffer, length);
 }
 
 void WebServer::writeP(const prog_uchar *data, size_t length)
