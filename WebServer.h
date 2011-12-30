@@ -36,8 +36,8 @@
  * CONFIGURATION
  ********************************************************************/
 
-#define WEBDUINO_VERSION 1004
-#define WEBDUINO_VERSION_STRING "1.4"
+#define WEBDUINO_VERSION 1005
+#define WEBDUINO_VERSION_STRING "1.5"
 
 #if WEBDUINO_SUPRESS_SERVER_HEADER
 #define WEBDUINO_SERVER_HEADER ""
@@ -112,7 +112,7 @@ public:
                        char *url_tail, bool tail_complete);
 
   // constructor for webserver object
-  WebServer(const char *urlPrefix = "/", int port = 80);
+  WebServer(const char *urlPrefix = "", int port = 80);
 
   // start listening for connections
   void begin();
@@ -237,6 +237,7 @@ private:
   static void defaultFailCmd(WebServer &server, ConnectionType type,
                              char *url_tail, bool tail_complete);
   void noRobots(ConnectionType type);
+  void favicon(ConnectionType type);
 };
 
 #endif // WEBDUINO_H_

@@ -17,8 +17,8 @@ static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 static uint8_t ip[] = { 192, 168, 1, 210 };
 
 /* This creates an instance of the webserver.  By specifying a prefix
- * of "/", all pages will be at the root of the server. */
-#define PREFIX "/"
+ * of "", all pages will be at the root of the server. */
+#define PREFIX ""
 WebServer webserver(PREFIX, 80);
 
 /* commands are functions that get called by the webserver framework
