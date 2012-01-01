@@ -192,7 +192,7 @@ void WebServer::processConnection(char *buff, int *bufflen)
 #if WEBDUINO_SERIAL_DEBUGGING > 1
     Serial.print("*** requestType = ");
     Serial.print((int)requestType);
-    Serial.println(", request = \"");
+    Serial.print(", request = \"");
     Serial.print(buff);
     Serial.println("\" ***");
 #endif
