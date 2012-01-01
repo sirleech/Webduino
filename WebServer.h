@@ -27,7 +27,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include "avr/pgmspace.h"
 
 #include <EthernetClient.h>
 #include <EthernetServer.h>
