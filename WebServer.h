@@ -476,7 +476,7 @@ void WebServer::noRobots(ConnectionType type)
 
 void WebServer::favicon(ConnectionType type)
 {
-  httpSuccess("image/x-icon");
+  httpSuccess("image/x-icon","Cache-Control: max-age=31536000");
   if (type != HEAD)
   {
     P(faviconIco) = {
