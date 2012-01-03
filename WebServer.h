@@ -35,8 +35,8 @@
  * CONFIGURATION
  ********************************************************************/
 
-#define WEBDUINO_VERSION 1005
-#define WEBDUINO_VERSION_STRING "1.5"
+#define WEBDUINO_VERSION 1006
+#define WEBDUINO_VERSION_STRING "1.6"
 
 #if WEBDUINO_SUPRESS_SERVER_HEADER
 #define WEBDUINO_SERVER_HEADER ""
@@ -60,6 +60,14 @@
 #ifndef WEBDUINO_FAIL_MESSAGE
 #define WEBDUINO_FAIL_MESSAGE "<h1>EPIC FAIL</h1>"
 #endif
+
+#ifndef WEBDUINO_AUTH_REALM
+#define WEBDUINO_AUTH_REALM "Webduino"
+#endif // #ifndef WEBDUINO_AUTH_REALM
+
+#ifndef WEBDUINO_AUTH_MESSAGE
+#define WEBDUINO_AUTH_MESSAGE "<h1>401 Unauthorized</h1>"
+#endif // #ifndef WEBDUINO_AUTH_MESSAGE
 
 // add '#define WEBDUINO_FAVICON_DATA ""' to your application
 // before including WebServer.h to send a null file as the favicon.ico file
@@ -178,6 +186,10 @@ public:
   // value or 0 if nothing was read.
   bool readInt(int &number);
 
+  // reads a header value, stripped of possible whitespace in front,
+  // from the server stream
+  void readHeader(char *value, int valueLen);
+
   // Read the next keyword parameter from the socket.  Assumes that other
   // code has already skipped over the headers,  and the next thing to
   // be read will be the start of a keyword.
@@ -192,8 +204,19 @@ public:
   URLPARAM_RESULT nextURLparam(char **tail, char *name, int nameLen,
                                char *value, int valueLen);
 
+  // compare string against credentials in current request
+  //
+  // authCredentials must be Base64 encoded outside of Webduino
+  // (I wanted to be easy on the resources)
+  //
+  // returns true if strings match, false otherwise
+  bool checkCredentials(const char authCredentials[44]);
+
   // output headers and a message indicating a server error
   void httpFail();
+  
+  // output headers and a message indicating "401 Unauthorized"
+  void httpUnauthorized();
 
   // output standard headers indicating "200 Success".  You can change the
   // type of the data you're outputting or also add extra headers like
@@ -221,6 +244,7 @@ private:
   char m_pushbackDepth;
 
   int m_contentLength;
+  char m_authCredentials[50];
   bool m_readingContent;
 
   Command *m_failureCmd;
@@ -452,6 +476,14 @@ void WebServer::processConnection(char *buff, int *bufflen)
   }
 }
 
+bool WebServer::checkCredentials(const char authCredentials[44])
+{
+  char str[50] = "Basic ";
+  strcat(str,authCredentials);
+  if(0 == strcmp(str,m_authCredentials)) return true;
+  return false;
+}
+
 void WebServer::httpFail()
 {
   P(failMsg) =
@@ -490,6 +522,19 @@ void WebServer::favicon(ConnectionType type)
     P(faviconIco) = WEBDUINO_FAVICON_DATA;
     writeP(faviconIco, sizeof(faviconIco));
   }
+}
+
+void WebServer::httpUnauthorized()
+{
+  P(failMsg) =
+    "HTTP/1.0 401 Authorization Required" CRLF
+    WEBDUINO_SERVER_HEADER
+    "Content-Type: text/html" CRLF
+    "WWW-Authenticate: Basic realm=\"" WEBDUINO_AUTH_REALM "\"" CRLF
+    CRLF
+    WEBDUINO_AUTH_MESSAGE;
+
+  printP(failMsg);
 }
 
 void WebServer::httpSuccess(const char *contentType,
@@ -659,6 +704,31 @@ bool WebServer::readInt(int &number)
   if (negate)
     number = -number;
   return gotNumber;
+}
+
+void WebServer::readHeader(char *value, int valueLen)
+{
+  int ch;
+  memset(value, 0, valueLen);
+  --valueLen;
+
+  // absorb whitespace
+  do
+  {
+    ch = read();
+  } while (ch == ' ' || ch == '\t');
+
+  // read rest of line
+  do
+  {
+    if (valueLen > 1)
+    {
+      *value++=ch;
+      --valueLen;
+      ch = read();
+    }
+  } while (ch != '\r');
+  push(ch);
 }
 
 bool WebServer::readPOSTparam(char *name, int nameLen,
@@ -914,7 +984,7 @@ void WebServer::getRequest(WebServer::ConnectionType &type,
 
 void WebServer::processHeaders()
 {
-  // look for two things: the Content-Length header and the double-CRLF
+  // look for three things: the Content-Length header, the Authorization header, and the double-CRLF
   // that ends the headers.
 
   while (1)
@@ -925,6 +995,17 @@ void WebServer::processHeaders()
 #if WEBDUINO_SERIAL_DEBUGGING > 1
       Serial.print("\n*** got Content-Length of ");
       Serial.print(m_contentLength);
+      Serial.print(" ***");
+#endif
+      continue;
+    }
+
+    if (expect("Authorization:"))
+    {
+      readHeader(m_authCredentials,70);
+#if WEBDUINO_SERIAL_DEBUGGING > 1
+      Serial.print("\n*** got Authorization: of ");
+      Serial.print(m_authCredentials);
       Serial.print(" ***");
 #endif
       continue;

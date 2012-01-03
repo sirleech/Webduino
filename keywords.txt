@@ -1,5 +1,9 @@
 WebServer	KEYWORD1
 ConnectionType	KEYWORD1
+INVALID	KEYWORD2
+GET	KEYWORD2
+HEAD	KEYWORD2
+POST	KEYWORD2
 begin	KEYWORD2
 processConnection	KEYWORD2
 setDefaultCommand	KEYWORD2
@@ -14,9 +18,12 @@ read	KEYWORD2
 push	KEYWORD2
 expect	KEYWORD2
 readInt	KEYWORD2
+readHeader	KEYWORD2
 readPOSTparam	KEYWORD2
 nextURLparam	KEYWORD2
+checkCredentials	KEYWORD2
 httpFail	KEYWORD2
+httpUnauthorized	KEYWORD2
 httpSuccess	KEYWORD2
 httpSeeOther	KEYWORD2
 write	KEYWORD2
