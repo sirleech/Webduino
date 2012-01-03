@@ -484,7 +484,7 @@ void WebServer::noRobots(ConnectionType type)
 
 void WebServer::favicon(ConnectionType type)
 {
-  httpSuccess("image/x-icon","Cache-Control: max-age=31536000");
+  httpSuccess("image/x-icon","Cache-Control: max-age=31536000\r\n");
   if (type != HEAD)
   {
     P(faviconIco) = WEBDUINO_FAVICON_DATA;
@@ -504,10 +504,8 @@ void WebServer::httpSuccess(const char *contentType,
   printP(successMsg1);
   print(contentType);
   printCRLF();
-  if (extraHeaders) {
+  if (extraHeaders)
     print(extraHeaders);
-    printCRLF();
-  }
   printCRLF();
 }
 
