@@ -358,8 +358,18 @@ void WebServer::printCRLF()
 bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
         bool tail_complete)
 {
+  // if there is no URL, i.e. we have a prefix and it's requested without a trailing slash
+  // or if the URL is just the slash
   if ((verb[0] == 0) || ((verb[0] == '/') && (verb[1] == 0)))
   {
+    m_defaultCmd(*this, requestType, "", tail_complete);
+    return true;
+  }
+  // if the URL is just a slash followed by a question mark
+  // we're looking at the default command with GET parameters passed
+  if ((verb[0] == '/') && (verb[1] == '?'))
+  {
+    verb+=2; // skip over the "/?" part of the url
     m_defaultCmd(*this, requestType, verb, tail_complete);
     return true;
   }
