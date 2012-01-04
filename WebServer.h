@@ -903,8 +903,8 @@ void WebServer::getRequest(WebServer::ConnectionType &type,
     {
       *request = ch;
       ++request;
-      --*length;
     }
+    --*length;
   }
   // NUL terminate
   *request = 0;
