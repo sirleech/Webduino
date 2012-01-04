@@ -1,8 +1,8 @@
 # Webduino
 
-### Project forked from 1.4.1 of http://code.google.com/p/webduino/ by Ben Combee
+### Project originally forked from 1.4.1 of http://code.google.com/p/webduino/ by Ben Combee
 
-This is an Arduino-based Web Server library, originally developed for a class at NYC Resistor. It's called Webduino, and it's an extensible web server library for the Arduino using the Wiznet-based Ethernet shields. It's released under the MIT license allowing all sorts of reuse. 
+This is an Arduino-based Web Server library, originally developed for a class at NYC Resistor. It's called Webduino, and it's an extensible web server library for the Arduino using the Wiznet-based Ethernet shields. It's released under the MIT license allowing all sorts of reuse.
 
 I've got a few examples up right now -- the Buzz example interfaces with Zach's Danger Shield allowing you to remotely start and stop the speaker. We had a room full of students pinging my Arduino board on Saturday, buzzing me while I was lecturing. It was fun. The big Demo example shows how to setup an HTML form running on the device where you can read and write pins.
 
@@ -15,15 +15,15 @@ I hope to add a few more examples in the next few weeks, including a web-enabled
 - Web Forms
 - Images
 - JSON/RESTful interface
+- HTTP Basic Authentication
 
 ## Installation Notes
 
-With Arduino 1.0, add the Webduino folder to the "libraries" folder of your sketchbook directory. 
+With Arduino 1.0, add the Webduino folder to the "libraries" folder of your sketchbook directory.
 
 You can put the examples in your own sketchbook directory, or in hardware/libraries/webduino/examples, as you prefer.
 
 If you get an error message when building the examples similar to "WebServer.h not found", it's a problem with where you put the Webduino folder. The server won't work if the header is directly in the libraries folder.
-
 
 ## Presentation
 
@@ -40,6 +40,10 @@ These have all been tested with the library successfully:
 - NKC Electronics Ethernet Shield DIY Kit
 
 ## Version history
+
+### 1.6 released in Jan 2012
+
+- added checkCredentials and httpUnauthorized methods as well as readHeader method for HTTP Basic Authentication; currently users will have to do the Base64 encoding outside of Webduino and I'm uncertain whether I ever want this inside the library or not...
 
 ### 1.5 released in Dec 2011
 
