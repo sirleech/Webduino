@@ -440,6 +440,8 @@ void WebServer::processConnection()
 
 void WebServer::processConnection(char *buff, int *bufflen)
 {
+  int urlPrefixLen = strlen(m_urlPrefix);
+
   m_client = m_server.available();
 
   if (m_client) {
@@ -457,21 +459,29 @@ void WebServer::processConnection(char *buff, int *bufflen)
     Serial.print(buff);
     Serial.println("\" ***");
 #endif
-    processHeaders();
+
+    // don't even look further at invalid requests.
+    // this is done to prevent Webduino from hanging
+    // - when there are illegal requests,
+    // - when someone contacts it through telnet rather than proper HTTP,
+    // - etc.
+    if (requestType != INVALID)
+    {
+      processHeaders();
 #if WEBDUINO_SERIAL_DEBUGGING > 1
-    Serial.println("*** headers complete ***");
+      Serial.println("*** headers complete ***");
 #endif
 
-    int urlPrefixLen = strlen(m_urlPrefix);
-    if (strcmp(buff, "/robots.txt") == 0)
-    {
-      noRobots(requestType);
+      if (strcmp(buff, "/robots.txt") == 0)
+      {
+        noRobots(requestType);
+      }
+      else if (strcmp(buff, "/favicon.ico") == 0)
+      {
+        favicon(requestType);
+      }
     }
-    else if (strcmp(buff, "/favicon.ico") == 0)
-    {
-      favicon(requestType);
-    }
-    else if (requestType == INVALID ||
+    if      (requestType == INVALID ||
              strncmp(buff, m_urlPrefix, urlPrefixLen) != 0 ||
              !dispatchCommand(requestType, buff + urlPrefixLen,
                               (*bufflen) >= 0))
@@ -482,7 +492,7 @@ void WebServer::processConnection(char *buff, int *bufflen)
 #if WEBDUINO_SERIAL_DEBUGGING > 1
     Serial.println("*** stopping connection ***");
 #endif
-    m_client.stop();
+    reset();
   }
 }
 
@@ -627,8 +637,7 @@ int WebServer::read()
 #if WEBDUINO_SERIAL_DEBUGGING
           Serial.println("*** Connection timed out");
 #endif
-          m_client.flush();
-          m_client.stop();
+          reset();
           return -1;
         }
       }
@@ -659,6 +668,8 @@ void WebServer::push(int ch)
 void WebServer::reset()
 {
   m_pushbackDepth = 0;
+  m_client.flush();
+  m_client.stop();
 }
 
 bool WebServer::expect(const char *str)
@@ -968,7 +979,9 @@ void WebServer::getRequest(WebServer::ConnectionType &type,
     type = POST;
 
   // if it doesn't start with any of those, we have an unknown method
-  // so just eat rest of header
+  // so just get out of here
+  else
+    return;
 
   int ch;
   while ((ch = read()) != -1)
