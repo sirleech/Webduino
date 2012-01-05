@@ -994,6 +994,11 @@ void WebServer::processHeaders()
   // look for three things: the Content-Length header, the Authorization header, and the double-CRLF
   // that ends the headers.
 
+  // empty the m_authCredentials before every run of this function.
+  // otherwise users who don't send an Authorization header would be treated
+  // like the last user who tried to authenticate (possibly successful)
+  m_authCredentials[0]=0;
+
   while (1)
   {
     if (expect("Content-Length:"))
