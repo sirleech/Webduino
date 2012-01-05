@@ -210,7 +210,7 @@ public:
   // (I wanted to be easy on the resources)
   //
   // returns true if strings match, false otherwise
-  bool checkCredentials(const char authCredentials[44]);
+  bool checkCredentials(const char authCredentials[45]);
 
   // output headers and a message indicating a server error
   void httpFail();
@@ -244,7 +244,7 @@ private:
   char m_pushbackDepth;
 
   int m_contentLength;
-  char m_authCredentials[50];
+  char m_authCredentials[51];
   bool m_readingContent;
 
   Command *m_failureCmd;
@@ -486,7 +486,7 @@ void WebServer::processConnection(char *buff, int *bufflen)
   }
 }
 
-bool WebServer::checkCredentials(const char authCredentials[44])
+bool WebServer::checkCredentials(const char authCredentials[45])
 {
   char basic[7] = "Basic ";
   if((0 == strncmp(m_authCredentials,basic,6)) && (0 == strcmp(authCredentials,m_authCredentials+6))) return true;
@@ -1014,7 +1014,7 @@ void WebServer::processHeaders()
 
     if (expect("Authorization:"))
     {
-      readHeader(m_authCredentials,50);
+      readHeader(m_authCredentials,51);
 #if WEBDUINO_SERIAL_DEBUGGING > 1
       Serial.print("\n*** got Authorization: of ");
       Serial.print(m_authCredentials);
