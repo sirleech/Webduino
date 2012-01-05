@@ -44,6 +44,8 @@ These have all been tested with the library successfully:
 ### 1.6 released in Jan 2012
 
 - added checkCredentials and httpUnauthorized methods as well as readHeader method for HTTP Basic Authentication; currently users will have to do the Base64 encoding outside of Webduino and I'm uncertain whether I ever want this inside the library or not...
+- fixed the request parser: previously the command dispatcher would always pass true for tail_complete, even if the tail was incomplete
+- fixed the command dispatcher: previously the default command could not have a tail, but the EPIC FAIL was returned
 
 ### 1.5 released in Dec 2011
 
