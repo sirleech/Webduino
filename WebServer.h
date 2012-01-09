@@ -820,13 +820,17 @@ bool WebServer::readPOSTparam(char *name, int nameLen,
       ch = strtoul(hex, NULL, 16);
     }
 
-    // check against 1 so we don't overwrite the final NUL
-    if (nameLen > 1)
+    // output the new character into the appropriate buffer or drop it if
+    // there's no room in either one.  This code will malfunction in the
+    // case where the parameter name is too long to fit into the name buffer,
+    // but in that case, it will just overflow into the value buffer so
+    // there's no harm.
+    if (nameLen > 0)
     {
       *name++ = ch;
       --nameLen;
     }
-    else if (valueLen > 1)
+    else if (valueLen > 0)
     {
       *value++ = ch;
       --valueLen;
