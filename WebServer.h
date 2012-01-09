@@ -35,7 +35,7 @@
  * CONFIGURATION
  ********************************************************************/
 
-#define WEBDUINO_VERSION 1006
+#define WEBDUINO_VERSION 1007
 #define WEBDUINO_VERSION_STRING "1.7"
 
 #if WEBDUINO_SUPRESS_SERVER_HEADER

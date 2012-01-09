@@ -1,17 +1,11 @@
 # Webduino
 
-### Project originally forked from 1.4.1 of http://code.google.com/p/webduino/ by Ben Combee
-
 This is an Arduino-based Web Server library, originally developed for a class at NYC Resistor. It's called Webduino, and it's an extensible web server library for the Arduino using the Wiznet-based Ethernet shields. It's released under the MIT license allowing all sorts of reuse.
-
-I've got a few examples up right now -- the Buzz example interfaces with Zach's Danger Shield allowing you to remotely start and stop the speaker. We had a room full of students pinging my Arduino board on Saturday, buzzing me while I was lecturing. It was fun. The big Demo example shows how to setup an HTML form running on the device where you can read and write pins.
-
-I hope to add a few more examples in the next few weeks, including a web-enabled fridge sign using a serial LCD and how to serve things other than just HTML text from the device. I also need to work on more documentation and finishing up my slides.
 
 ## Features
 
 - URL parameter parsing
-- Handle HTTP Methods, e.g. GET, POST
+- Handle the following HTTP Methods: GET, HEAD, POST, PUT, DELETE
 - Web Forms
 - Images
 - JSON/RESTful interface
@@ -40,6 +34,17 @@ These have all been tested with the library successfully:
 - NKC Electronics Ethernet Shield DIY Kit
 
 ## Version history
+
+### 1.7 released in Jan 2012
+
+- fixed Google Code issue [4](http://code.google.com/p/webduino/issues/detail?id=4) where expect fails with high-ASCII characters due to sign issues
+- fixed Google Code issue [8](http://code.google.com/p/webduino/issues/detail?id=8) by adding WEBDUINO_NO_IMPLEMENTATION macro that allows including the class definition without the implementation code
+- fixed Google Code issue [9](http://code.google.com/p/webduino/issues/detail?id=9): allowing prog_char* strings for printP
+- added httpServerError() method to output 500 Internal Server Error message
+- added support for HTTP PUT and DELETE methods (see Google Code issue [11](http://code.google.com/p/webduino/issues/detail?id=11)
+- fixed Google Code issue [12](http://code.google.com/p/webduino/issues/detail?id=12): off-by-one error in name/value parser (readPOSTparam) where the buffer wouldn't ever be completely filled
+- updated copyright string for 2012 and major authors
+- GitHub fork now the official version; all open issues on Goole Code site fixed or closed and moved to GitHub
 
 ### 1.6 released in Jan 2012
 
