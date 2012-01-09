@@ -309,6 +309,11 @@ private:
   void favicon(ConnectionType type);
 };
 
+/* define this macro if you want to include the header in a sketch source
+   file but not define any of the implementation. This is useful if
+   multiple source files are using the Webduino class. */
+#ifndef WEBDUINO_NO_IMPLEMENTATION
+
 /********************************************************************
  * IMPLEMENTATION
  ********************************************************************/
@@ -1146,5 +1151,7 @@ void WebServer::radioButton(const char *name, const char *val,
 {
   outputCheckboxOrRadio("radio", name, val, label, selected);
 }
+
+#endif // WEBDUINO_NO_IMPLEMENTATION
 
 #endif // WEBDUINO_H_
