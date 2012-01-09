@@ -147,7 +147,7 @@ class WebServer: public Print
 {
 public:
   // passed to a command to indicate what kind of request was received
-  enum ConnectionType { INVALID, GET, HEAD, POST, PUT, DELETE };
+  enum ConnectionType { INVALID, GET, HEAD, POST, PUT, DELETE, PATCH };
 
   // any commands registered with the web server have to follow
   // this prototype.
@@ -1041,6 +1041,8 @@ void WebServer::getRequest(WebServer::ConnectionType &type,
     type = PUT;
   else if (expect("DELETE "))
     type = DELETE;
+  else if (expect("PATCH "))
+    type = PATCH;
 
   // if it doesn't start with any of those, we have an unknown method
   // so just get out of here
