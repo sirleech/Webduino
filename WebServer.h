@@ -214,7 +214,7 @@ public:
 
   // output headers and a message indicating a server error
   void httpFail();
-  
+
   // output headers and a message indicating "401 Unauthorized"
   void httpUnauthorized();
 
@@ -359,7 +359,7 @@ void WebServer::printP(const prog_uchar *str)
   // chunks of 32 bytes to avoid extra short TCP/IP packets
   uint8_t buffer[32];
   size_t bufferEnd = 0;
-  
+
   while (buffer[bufferEnd++] = pgm_read_byte(str++))
   {
     if (bufferEnd == 32)
@@ -791,13 +791,12 @@ bool WebServer::readPOSTparam(char *name, int nameLen,
       ch = strtoul(hex, NULL, 16);
     }
 
-    // check against 1 so we don't overwrite the final NUL
-    if (nameLen > 1)
+    if (nameLen > 0)
     {
       *name++ = ch;
       --nameLen;
     }
-    else if (valueLen > 1)
+    else if (valueLen > 0)
     {
       *value++ = ch;
       --valueLen;
