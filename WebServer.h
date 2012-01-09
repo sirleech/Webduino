@@ -191,6 +191,9 @@ public:
   // with the P macro
   void printP(const prog_uchar *str);
 
+  // inline overload for printP to handle signed char strings
+  void printP(const prog_char *str) { printP((prog_uchar*)str); }
+
   // output raw data stored in program memory
   void writeP(const prog_uchar *data, size_t length);
 
