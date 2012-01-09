@@ -115,7 +115,7 @@ class WebServer: public Print
 {
 public:
   // passed to a command to indicate what kind of request was received
-  enum ConnectionType { INVALID, GET, HEAD, POST };
+  enum ConnectionType { INVALID, GET, HEAD, POST, PUT, DELETE };
 
   // any commands registered with the web server have to follow
   // this prototype.
@@ -950,8 +950,8 @@ URLPARAM_RESULT WebServer::nextURLparam(char **tail, char *name, int nameLen,
 
 
 // Read and parse the first line of the request header.
-// The "command" (GET/HEAD/POST) is translated into a numeric value in type.
-// The URL is stored in request,  up to the length passed in length
+// The "command" (GET/HEAD/POST/PUT/DELETE) is translated into a numeric
+// value in type. The URL is stored in request, up to the length passed in length
 // NOTE 1: length must include one byte for the terminating NUL.
 // NOTE 2: request is NOT checked for NULL,  nor length for a value < 1.
 // Reading stops when the code encounters a space, CR, or LF.  If the HTTP
@@ -969,13 +969,17 @@ void WebServer::getRequest(WebServer::ConnectionType &type,
 
   type = INVALID;
 
-  // store the GET/POST line of the request
+  // store the GET/POST/PUT/DELETE line of the request
   if (expect("GET "))
     type = GET;
   else if (expect("HEAD "))
     type = HEAD;
   else if (expect("POST "))
     type = POST;
+  else if (expect("PUT "))
+    type = PUT;
+  else if (expect("DELETE "))
+    type = DELETE;
 
   // if it doesn't start with any of those, we have an unknown method
   // so just get out of here
