@@ -24,6 +24,7 @@ nextURLparam	KEYWORD2
 checkCredentials	KEYWORD2
 httpFail	KEYWORD2
 httpUnauthorized	KEYWORD2
+httpServerError	KEYWORD2
 httpSuccess	KEYWORD2
 httpSeeOther	KEYWORD2
 write	KEYWORD2
