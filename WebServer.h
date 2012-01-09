@@ -115,7 +115,7 @@ class WebServer: public Print
 {
 public:
   // passed to a command to indicate what kind of request was received
-  enum ConnectionType { INVALID, GET, HEAD, POST };
+  enum ConnectionType { INVALID, GET, HEAD, POST, PUT, DELETE };
 
   // any commands registered with the web server have to follow
   // this prototype.
@@ -214,7 +214,7 @@ public:
 
   // output headers and a message indicating a server error
   void httpFail();
-  
+
   // output headers and a message indicating "401 Unauthorized"
   void httpUnauthorized();
 
@@ -359,7 +359,7 @@ void WebServer::printP(const prog_uchar *str)
   // chunks of 32 bytes to avoid extra short TCP/IP packets
   uint8_t buffer[32];
   size_t bufferEnd = 0;
-  
+
   while (buffer[bufferEnd++] = pgm_read_byte(str++))
   {
     if (bufferEnd == 32)
@@ -791,13 +791,12 @@ bool WebServer::readPOSTparam(char *name, int nameLen,
       ch = strtoul(hex, NULL, 16);
     }
 
-    // check against 1 so we don't overwrite the final NUL
-    if (nameLen > 1)
+    if (nameLen > 0)
     {
       *name++ = ch;
       --nameLen;
     }
-    else if (valueLen > 1)
+    else if (valueLen > 0)
     {
       *value++ = ch;
       --valueLen;
@@ -951,8 +950,8 @@ URLPARAM_RESULT WebServer::nextURLparam(char **tail, char *name, int nameLen,
 
 
 // Read and parse the first line of the request header.
-// The "command" (GET/HEAD/POST) is translated into a numeric value in type.
-// The URL is stored in request,  up to the length passed in length
+// The "command" (GET/HEAD/POST/PUT/DELETE) is translated into a numeric
+// value in type. The URL is stored in request, up to the length passed in length
 // NOTE 1: length must include one byte for the terminating NUL.
 // NOTE 2: request is NOT checked for NULL,  nor length for a value < 1.
 // Reading stops when the code encounters a space, CR, or LF.  If the HTTP
@@ -970,13 +969,17 @@ void WebServer::getRequest(WebServer::ConnectionType &type,
 
   type = INVALID;
 
-  // store the GET/POST line of the request
+  // store the GET/POST/PUT/DELETE line of the request
   if (expect("GET "))
     type = GET;
   else if (expect("HEAD "))
     type = HEAD;
   else if (expect("POST "))
     type = POST;
+  else if (expect("PUT "))
+    type = PUT;
+  else if (expect("DELETE "))
+    type = DELETE;
 
   // if it doesn't start with any of those, we have an unknown method
   // so just get out of here
