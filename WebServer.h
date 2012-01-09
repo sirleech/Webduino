@@ -69,6 +69,10 @@
 #define WEBDUINO_AUTH_MESSAGE "<h1>401 Unauthorized</h1>"
 #endif // #ifndef WEBDUINO_AUTH_MESSAGE
 
+#ifndef WEBDUINO_SERVER_ERROR_MESSAGE
+#define WEBDUINO_SERVER_ERROR_MESSAGE "<h1>500 Internal Server Error</h1>"
+#endif // WEBDUINO_SERVER_ERROR_MESSAGE
+
 // add '#define WEBDUINO_FAVICON_DATA ""' to your application
 // before including WebServer.h to send a null file as the favicon.ico file
 // otherwise this defaults to a 16x16 px black diode on blue ground
@@ -245,6 +249,9 @@ public:
   
   // output headers and a message indicating "401 Unauthorized"
   void httpUnauthorized();
+
+  // output headers and a message indicating "500 Internal Server Error"
+  void httpServerError();
 
   // output standard headers indicating "200 Success".  You can change the
   // type of the data you're outputting or also add extra headers like
@@ -581,6 +588,18 @@ void WebServer::httpUnauthorized()
     "WWW-Authenticate: Basic realm=\"" WEBDUINO_AUTH_REALM "\"" CRLF
     CRLF
     WEBDUINO_AUTH_MESSAGE;
+
+  printP(failMsg);
+}
+
+void WebServer::httpServerError()
+{
+  P(failMsg) =
+    "HTTP/1.0 500 Internal Server Error" CRLF
+    WEBDUINO_SERVER_HEADER
+    "Content-Type: text/html" CRLF
+    CRLF
+    WEBDUINO_SERVER_ERROR_MESSAGE;
 
   printP(failMsg);
 }
