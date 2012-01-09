@@ -278,7 +278,7 @@ private:
   EthernetClient m_client;
   const char *m_urlPrefix;
 
-  char m_pushback[32];
+  unsigned char m_pushback[32];
   char m_pushbackDepth;
 
   int m_contentLength;
