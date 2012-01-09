@@ -34,7 +34,8 @@ These have all been tested with the library successfully:
 - [Adafruit Ethernet Shield w/ Wiznet 811MJ module](http://www.ladyada.net/make/eshield/)
 - [NKC Electronics Ethernet Shield DIY Kit](http://store.nkcelectronics.com/nkc-ethernet-shield-diy-kit-without-wiz812mj-mod812.html)
 
-Shields using the Microchip ENC28J60 
+Shields using the Microchip ENC28J60 chip won't work with the library as that requires more software support for implementating 
+the TCP/IP stack.
 
 ## Version history
 
