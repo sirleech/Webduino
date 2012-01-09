@@ -5,7 +5,7 @@ This is an Arduino-based Web Server library, originally developed for a class at
 ## Features
 
 - URL parameter parsing
-- Handle the following HTTP Methods: GET, HEAD, POST, PUT, DELETE
+- Handle the following HTTP Methods: GET, HEAD, POST, PUT, DELETE, PATCH
 - Web Forms
 - Images
 - JSON/RESTful interface
@@ -27,11 +27,15 @@ If you get an error message when building the examples similar to "WebServer.h n
 
 These have all been tested with the library successfully:
 
-- Freetronics Etherten
-- Freetronics Ethernet Shield
-- Arduino Ethernet Shield, both original and updated microSD version
-- Adafruit Ethernet Shield w/ Wiznet 811MJ module
-- NKC Electronics Ethernet Shield DIY Kit
+- [Freetronics Etherten](http://www.freetronics.com/products/etherten)
+- [Freetronics Ethernet Shield](http://www.freetronics.com/products/ethernet-shield-with-poe)
+- [Arduino Ethernet](http://arduino.cc/en/Main/ArduinoBoardEthernet)
+- [Arduino Ethernet Shield, both original and updated microSD version](http://arduino.cc/en/Main/ArduinoEthernetShield)
+- [Adafruit Ethernet Shield w/ Wiznet 811MJ module](http://www.ladyada.net/make/eshield/)
+- [NKC Electronics Ethernet Shield DIY Kit](http://store.nkcelectronics.com/nkc-ethernet-shield-diy-kit-without-wiz812mj-mod812.html)
+
+Shields using the Microchip ENC28J60 chip won't work with the library as that requires more software support for implementating 
+the TCP/IP stack.
 
 ## Version history
 
@@ -41,10 +45,10 @@ These have all been tested with the library successfully:
 - fixed Google Code issue [8](http://code.google.com/p/webduino/issues/detail?id=8) by adding WEBDUINO_NO_IMPLEMENTATION macro that allows including the class definition without the implementation code
 - fixed Google Code issue [9](http://code.google.com/p/webduino/issues/detail?id=9): allowing prog_char* strings for printP
 - added httpServerError() method to output 500 Internal Server Error message
-- added support for HTTP PUT and DELETE methods (see Google Code issue [11](http://code.google.com/p/webduino/issues/detail?id=11)
+- added support for HTTP PUT, DELETE, and PATCH methods (see Google Code issue [11](http://code.google.com/p/webduino/issues/detail?id=11)
 - fixed Google Code issue [12](http://code.google.com/p/webduino/issues/detail?id=12): off-by-one error in name/value parser (readPOSTparam) where the buffer wouldn't ever be completely filled
 - updated copyright string for 2012 and major authors
-- GitHub fork now the official version; all open issues on Goole Code site fixed or closed and moved to GitHub
+- GitHub fork now the official version; all open issues on Google Code site fixed or closed and moved to GitHub
 
 ### 1.6 released in Jan 2012
 
