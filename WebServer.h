@@ -1,7 +1,7 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil;  c-file-style: "k&r"; c-basic-offset: 2; -*-
 
    Webduino, a simple Arduino web server
-   Copyright 2009 Ben Combee, Ran Talbott
+   Copyright 2009-2012 Ben Combee, Ran Talbott, Christopher Lee, Martin Lormes
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@
  ********************************************************************/
 
 #define WEBDUINO_VERSION 1006
-#define WEBDUINO_VERSION_STRING "1.6"
+#define WEBDUINO_VERSION_STRING "1.7"
 
 #if WEBDUINO_SUPRESS_SERVER_HEADER
 #define WEBDUINO_SERVER_HEADER ""
@@ -69,12 +69,44 @@
 #define WEBDUINO_AUTH_MESSAGE "<h1>401 Unauthorized</h1>"
 #endif // #ifndef WEBDUINO_AUTH_MESSAGE
 
+#ifndef WEBDUINO_SERVER_ERROR_MESSAGE
+#define WEBDUINO_SERVER_ERROR_MESSAGE "<h1>500 Internal Server Error</h1>"
+#endif // WEBDUINO_SERVER_ERROR_MESSAGE
+
 // add '#define WEBDUINO_FAVICON_DATA ""' to your application
 // before including WebServer.h to send a null file as the favicon.ico file
 // otherwise this defaults to a 16x16 px black diode on blue ground
 // (or include your own icon if you like)
 #ifndef WEBDUINO_FAVICON_DATA
-#define WEBDUINO_FAVICON_DATA { 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x10, 0x10, 0x02, 0x00, 0x01, 0x00, 0x01, 0x00, 0xb0, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xcf, 0xbf, 0x00, 0x00, 0xc7, 0xbf, 0x00, 0x00, 0xc3, 0xbf, 0x00, 0x00, 0xc1, 0xbf, 0x00, 0x00, 0xc0, 0xbf, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0xbf, 0x00, 0x00, 0xc1, 0xbf, 0x00, 0x00, 0xc3, 0xbf, 0x00, 0x00, 0xc7, 0xbf, 0x00, 0x00, 0xcf, 0xbf, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+#define WEBDUINO_FAVICON_DATA { 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x10, \
+                                0x10, 0x02, 0x00, 0x01, 0x00, 0x01, 0x00, \
+                                0xb0, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, \
+                                0x00, 0x28, 0x00, 0x00, 0x00, 0x10, 0x00, \
+                                0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x01, \
+                                0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, \
+                                0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, \
+                                0x00, 0xff, 0xff, 0x00, 0x00, 0xcf, 0xbf, \
+                                0x00, 0x00, 0xc7, 0xbf, 0x00, 0x00, 0xc3, \
+                                0xbf, 0x00, 0x00, 0xc1, 0xbf, 0x00, 0x00, \
+                                0xc0, 0xbf, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0xc0, 0xbf, 0x00, 0x00, 0xc1, 0xbf, \
+                                0x00, 0x00, 0xc3, 0xbf, 0x00, 0x00, 0xc7, \
+                                0xbf, 0x00, 0x00, 0xcf, 0xbf, 0x00, 0x00, \
+                                0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00 }
 #endif // #ifndef WEBDUINO_FAVICON_DATA
 
 // add "#define WEBDUINO_SERIAL_DEBUGGING 1" to your application
@@ -115,7 +147,7 @@ class WebServer: public Print
 {
 public:
   // passed to a command to indicate what kind of request was received
-  enum ConnectionType { INVALID, GET, HEAD, POST };
+  enum ConnectionType { INVALID, GET, HEAD, POST, PUT, DELETE };
 
   // any commands registered with the web server have to follow
   // this prototype.
@@ -158,6 +190,9 @@ public:
   // output a string stored in program memory, usually one defined
   // with the P macro
   void printP(const prog_uchar *str);
+
+  // inline overload for printP to handle signed char strings
+  void printP(const prog_char *str) { printP((prog_uchar*)str); }
 
   // output raw data stored in program memory
   void writeP(const prog_uchar *data, size_t length);
@@ -218,6 +253,9 @@ public:
   // output headers and a message indicating "401 Unauthorized"
   void httpUnauthorized();
 
+  // output headers and a message indicating "500 Internal Server Error"
+  void httpServerError();
+
   // output standard headers indicating "200 Success".  You can change the
   // type of the data you're outputting or also add extra headers like
   // "Refresh: 1".  Extra headers should each be terminated with CRLF.
@@ -240,7 +278,7 @@ private:
   EthernetClient m_client;
   const char *m_urlPrefix;
 
-  char m_pushback[32];
+  unsigned char m_pushback[32];
   char m_pushbackDepth;
 
   int m_contentLength;
@@ -270,6 +308,11 @@ private:
   void noRobots(ConnectionType type);
   void favicon(ConnectionType type);
 };
+
+/* define this macro if you want to include the header in a sketch source
+   file but not define any of the implementation. This is useful if
+   multiple source files are using the Webduino class. */
+#ifndef WEBDUINO_NO_IMPLEMENTATION
 
 /********************************************************************
  * IMPLEMENTATION
@@ -382,8 +425,8 @@ void WebServer::printCRLF()
 bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
         bool tail_complete)
 {
-  // if there is no URL, i.e. we have a prefix and it's requested without a trailing slash
-  // or if the URL is just the slash
+  // if there is no URL, i.e. we have a prefix and it's requested without a 
+  // trailing slash or if the URL is just the slash
   if ((verb[0] == 0) || ((verb[0] == '/') && (verb[1] == 0)))
   {
     m_defaultCmd(*this, requestType, "", tail_complete);
@@ -499,7 +542,8 @@ void WebServer::processConnection(char *buff, int *bufflen)
 bool WebServer::checkCredentials(const char authCredentials[45])
 {
   char basic[7] = "Basic ";
-  if((0 == strncmp(m_authCredentials,basic,6)) && (0 == strcmp(authCredentials,m_authCredentials+6))) return true;
+  if((0 == strncmp(m_authCredentials,basic,6)) && 
+     (0 == strcmp(authCredentials, m_authCredentials + 6))) return true;
   return false;
 }
 
@@ -552,6 +596,18 @@ void WebServer::httpUnauthorized()
     "WWW-Authenticate: Basic realm=\"" WEBDUINO_AUTH_REALM "\"" CRLF
     CRLF
     WEBDUINO_AUTH_MESSAGE;
+
+  printP(failMsg);
+}
+
+void WebServer::httpServerError()
+{
+  P(failMsg) =
+    "HTTP/1.0 500 Internal Server Error" CRLF
+    WEBDUINO_SERVER_HEADER
+    "Content-Type: text/html" CRLF
+    CRLF
+    WEBDUINO_SERVER_ERROR_MESSAGE;
 
   printP(failMsg);
 }
@@ -791,13 +847,17 @@ bool WebServer::readPOSTparam(char *name, int nameLen,
       ch = strtoul(hex, NULL, 16);
     }
 
-    // check against 1 so we don't overwrite the final NUL
-    if (nameLen > 1)
+    // output the new character into the appropriate buffer or drop it if
+    // there's no room in either one.  This code will malfunction in the
+    // case where the parameter name is too long to fit into the name buffer,
+    // but in that case, it will just overflow into the value buffer so
+    // there's no harm.
+    if (nameLen > 0)
     {
       *name++ = ch;
       --nameLen;
     }
-    else if (valueLen > 1)
+    else if (valueLen > 0)
     {
       *value++ = ch;
       --valueLen;
@@ -970,13 +1030,17 @@ void WebServer::getRequest(WebServer::ConnectionType &type,
 
   type = INVALID;
 
-  // store the GET/POST line of the request
+  // store the HTTP method line of the request
   if (expect("GET "))
     type = GET;
   else if (expect("HEAD "))
     type = HEAD;
   else if (expect("POST "))
     type = POST;
+  else if (expect("PUT "))
+    type = PUT;
+  else if (expect("DELETE "))
+    type = DELETE;
 
   // if it doesn't start with any of those, we have an unknown method
   // so just get out of here
@@ -1004,8 +1068,8 @@ void WebServer::getRequest(WebServer::ConnectionType &type,
 
 void WebServer::processHeaders()
 {
-  // look for three things: the Content-Length header, the Authorization header, and the double-CRLF
-  // that ends the headers.
+  // look for three things: the Content-Length header, the Authorization 
+  // header, and the double-CRLF that ends the headers.
 
   // empty the m_authCredentials before every run of this function.
   // otherwise users who don't send an Authorization header would be treated
@@ -1087,5 +1151,7 @@ void WebServer::radioButton(const char *name, const char *val,
 {
   outputCheckboxOrRadio("radio", name, val, label, selected);
 }
+
+#endif // WEBDUINO_NO_IMPLEMENTATION
 
 #endif // WEBDUINO_H_
