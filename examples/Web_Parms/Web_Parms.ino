@@ -205,7 +205,7 @@ void parsedCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail
   if (type == WebServer::POST)
   {
     server.printP(Post_params_begin);
-    while (server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN))
+    while (server.readPOSTparam(name, NAMELEN, value, VALUELEN))
     {
       server.print(name);
       server.printP(Parsed_item_separator);

@@ -810,6 +810,8 @@ bool WebServer::readPOSTparam(char *name, int nameLen,
 {
   // assume name is at current place in stream
   int ch;
+  // to not to miss the last parameter
+  bool foundSomething = false;
 
   // clear out name and value so they'll be NUL terminated
   memset(name, 0, nameLen);
@@ -821,6 +823,7 @@ bool WebServer::readPOSTparam(char *name, int nameLen,
 
   while ((ch = read()) != -1)
   {
+    foundSomething = true;
     if (ch == '+')
     {
       ch = ' ';
@@ -864,9 +867,17 @@ bool WebServer::readPOSTparam(char *name, int nameLen,
     }
   }
 
-  // if we get here, we hit the end-of-file, so POST is over and there
-  // are no more parameters
-  return false;
+  if (foundSomething)
+  {
+    // if we get here, we have one last parameter to serve
+    return true;
+  }
+  else
+  {
+    // if we get here, we hit the end-of-file, so POST is over and there
+    // are no more parameters
+    return false;
+  }
 }
 
 /* Retrieve a parameter that was encoded as part of the URL, stored in
