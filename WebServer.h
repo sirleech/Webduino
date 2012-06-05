@@ -665,7 +665,6 @@ int WebServer::read()
 #endif
           return -1;
         }
-        --m_contentLength;
       }
 
       int ch = m_client.read();
@@ -674,6 +673,12 @@ int WebServer::read()
       // loop, checking connection status
       if (ch != -1)
       {
+        // count character against content-length
+        if (m_readingContent)
+        {
+          --m_contentLength;
+        }
+
 #if WEBDUINO_SERIAL_DEBUGGING
         if (ch == '\r')
           Serial.print("<CR>");
