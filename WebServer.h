@@ -273,6 +273,9 @@ public:
   virtual size_t write(const uint8_t *buffer, size_t size);
   size_t write(const char *data, size_t length);
 
+  // tells if there is anything to process
+  uint8_t available();
+
 private:
   EthernetServer m_server;
   EthernetClient m_client;
@@ -1168,6 +1171,10 @@ void WebServer::radioButton(const char *name, const char *val,
                             const char *label, bool selected)
 {
   outputCheckboxOrRadio("radio", name, val, label, selected);
+}
+
+uint8_t WebServer::available(){
+  return m_server.available();
 }
 
 #endif // WEBDUINO_NO_IMPLEMENTATION
