@@ -256,6 +256,9 @@ public:
   // output headers and a message indicating "500 Internal Server Error"
   void httpServerError();
 
+  // output headers indicating "204 No Content" and no further message
+  void httpNoContent();
+
   // output standard headers indicating "200 Success".  You can change the
   // type of the data you're outputting or also add extra headers like
   // "Refresh: 1".  Extra headers should each be terminated with CRLF.
@@ -618,6 +621,17 @@ void WebServer::httpServerError()
     WEBDUINO_SERVER_ERROR_MESSAGE;
 
   printP(failMsg);
+}
+
+void WebServer::httpNoContent()
+{
+  P(noContentMsg) =
+    "HTTP/1.0 204 NO CONTENT" CRLF
+    WEBDUINO_SERVER_HEADER
+    "Content-Type: text/html" CRLF
+    CRLF;
+
+  printP(noContentMsg);
 }
 
 void WebServer::httpSuccess(const char *contentType,
