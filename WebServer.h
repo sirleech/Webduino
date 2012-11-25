@@ -57,6 +57,10 @@
 #define WEBDUINO_READ_TIMEOUT_IN_MS 1000
 #endif
 
+#ifndef WEBDUINO_URL_PATH_COMMAND_LENGTH
+#define WEBDUINO_URL_PATH_COMMAND_LENGTH 8
+#endif
+
 #ifndef WEBDUINO_FAIL_MESSAGE
 #define WEBDUINO_FAIL_MESSAGE "<h1>EPIC FAIL</h1>"
 #endif
@@ -158,6 +162,13 @@ public:
   typedef void Command(WebServer &server, ConnectionType type,
                        char *url_tail, bool tail_complete);
 
+  // Prototype for the optional function which consumes the URL path itself.
+  // url_path contains pointers to the seperate parts of the URL path where '/'
+  //          was used as the delimiter.
+  typedef void UrlPathCommand(WebServer &server, ConnectionType type,
+                              char **url_path, char *url_tail,
+                              bool tail_complete);
+
   // constructor for webserver object
   WebServer(const char *urlPrefix = "", int port = 80);
 
@@ -183,6 +194,11 @@ public:
 
   // add a new command to be run at the URL specified by verb
   void addCommand(const char *verb, Command *cmd);
+
+  // Set command that's run if default command or URL specified commands do
+  // not run, uses extra url_path parameter to allow resolving the URL in the
+  // function.
+  void setUrlPathCommand(UrlPathCommand *cmd);
 
   // utility function to output CRLF pair
   void printCRLF();
@@ -296,6 +312,7 @@ private:
     Command *cmd;
   } m_commands[8];
   char m_cmdCount;
+  UrlPathCommand *m_urlPathCmd;
 
   void reset();
   void getRequest(WebServer::ConnectionType &type, char *request, int *length);
@@ -329,7 +346,8 @@ WebServer::WebServer(const char *urlPrefix, int port) :
   m_cmdCount(0),
   m_contentLength(0),
   m_failureCmd(&defaultFailCmd),
-  m_defaultCmd(&defaultFailCmd)
+  m_defaultCmd(&defaultFailCmd),
+  m_urlPathCmd(NULL)
 {
 }
 
@@ -355,6 +373,11 @@ void WebServer::addCommand(const char *verb, Command *cmd)
     m_commands[m_cmdCount].verb = verb;
     m_commands[m_cmdCount++].cmd = cmd;
   }
+}
+
+void WebServer::setUrlPathCommand(UrlPathCommand *cmd)
+{
+  m_urlPathCmd = cmd;
 }
 
 size_t WebServer::write(uint8_t ch)
@@ -471,6 +494,36 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
         tail_complete);
         return true;
       }
+    }
+    // Check if UrlPathCommand is assigned.
+    if (m_urlPathCmd != NULL)
+    {
+      // Initialize with null bytes, so number of parts can be determined.
+      char *url_path[WEBDUINO_URL_PATH_COMMAND_LENGTH] = {0};
+      int part = 0;
+
+      // URL path should be terminated with null byte.
+      *(verb + verb_len) = 0;
+
+      // First URL path part is at the start of verb.
+      url_path[part++] = verb;
+      // Replace all slashes ('/') with a null byte so every part of the URL
+      // path is a seperate string. Add every char following a '/' as a new
+      // part of the URL, even if that char is a '/' (which will be replaced
+      // with a null byte).
+      for (char * p = verb; p < verb + verb_len; p++)
+      {
+        if (*p == '/')
+        {
+          *p = 0;
+          url_path[part++] = p + 1;
+          // Don't try to assign out of array bounds.
+          if (part == WEBDUINO_URL_PATH_COMMAND_LENGTH) break;
+        }
+      }
+      m_urlPathCmd(*this, requestType, url_path,
+                   verb + verb_len + qm_offset, tail_complete);
+      return true;
     }
   }
   return false;
