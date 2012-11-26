@@ -524,10 +524,15 @@ void WebServer::processConnection(char *buff, int *bufflen)
         favicon(requestType);
       }
     }
-    if      (requestType == INVALID ||
-             strncmp(buff, m_urlPrefix, urlPrefixLen) != 0 ||
-             !dispatchCommand(requestType, buff + urlPrefixLen,
-                              (*bufflen) >= 0))
+    // Only try to dispatch command if request type and prefix are correct.
+    // Fix by quarencia.
+    if (requestType == INVALID ||
+        strncmp(buff, m_urlPrefix, urlPrefixLen) != 0)
+    {
+      m_failureCmd(*this, requestType, buff, (*bufflen) >= 0);
+    }
+    else if (!dispatchCommand(requestType, buff + urlPrefixLen,
+             (*bufflen) >= 0))
     {
       m_failureCmd(*this, requestType, buff, (*bufflen) >= 0);
     }
