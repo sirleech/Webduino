@@ -628,7 +628,7 @@ void WebServer::httpNoContent()
   P(noContentMsg) =
     "HTTP/1.0 204 NO CONTENT" CRLF
     WEBDUINO_SERVER_HEADER
-    "Content-Type: text/html" CRLF
+    CRLF
     CRLF;
 
   printP(noContentMsg);
