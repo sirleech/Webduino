@@ -826,8 +826,8 @@ void WebServer::readHeader(char *value, int valueLen)
     {
       *value++=ch;
       --valueLen;
-      ch = read();
     }
+    ch = read();
   } while (ch != '\r');
   push(ch);
 }
