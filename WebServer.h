@@ -127,7 +127,7 @@
 extern "C" unsigned long millis(void);
 
 // declare a static string
-#define P(name)   static const prog_uchar name[] PROGMEM
+#define P(name)   static const unsigned char name[] PROGMEM
 
 // returns the number of elements in the array
 #define SIZE(array) (sizeof(array) / sizeof(*array))
@@ -205,13 +205,13 @@ public:
 
   // output a string stored in program memory, usually one defined
   // with the P macro
-  void printP(const prog_uchar *str);
+  void printP(const unsigned char *str);
 
   // inline overload for printP to handle signed char strings
-  void printP(const prog_char *str) { printP((prog_uchar*)str); }
+  void printP(const char *str) { printP((unsigned char*)str); }
 
   // output raw data stored in program memory
-  void writeP(const prog_uchar *data, size_t length);
+  void writeP(const unsigned char *data, size_t length);
 
   // output HTML for a radio button
   void radioButton(const char *name, const char *val,
@@ -403,7 +403,7 @@ size_t WebServer::write(const char *buffer, size_t length)
   return m_client.write((const uint8_t *)buffer, length);
 }
 
-void WebServer::writeP(const prog_uchar *data, size_t length)
+void WebServer::writeP(const unsigned char *data, size_t length)
 {
   // copy data out of program memory into local storage, write out in
   // chunks of 32 bytes to avoid extra short TCP/IP packets
@@ -425,7 +425,7 @@ void WebServer::writeP(const prog_uchar *data, size_t length)
     m_client.write(buffer, bufferEnd);
 }
 
-void WebServer::printP(const prog_uchar *str)
+void WebServer::printP(const unsigned char *str)
 {
   // copy data out of program memory into local storage, write out in
   // chunks of 32 bytes to avoid extra short TCP/IP packets
