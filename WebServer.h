@@ -1033,7 +1033,7 @@ URLPARAM_RESULT WebServer::nextURLparam(char **tail, char *name, int nameLen,
       *name++ = ch;
       --nameLen;
     }
-    else
+    else if(keep_scanning)
       result = URLPARAM_NAME_OFLO;
   }
 
@@ -1089,7 +1089,7 @@ URLPARAM_RESULT WebServer::nextURLparam(char **tail, char *name, int nameLen,
         *value++ = ch;
         --valueLen;
       }
-      else
+      else if(keep_scanning)
         result = (result == URLPARAM_OK) ?
           URLPARAM_VALUE_OFLO :
           URLPARAM_BOTH_OFLO;
