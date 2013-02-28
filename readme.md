@@ -19,9 +19,11 @@ You can put the examples in your own sketchbook directory, or in hardware/librar
 
 If you get an error message when building the examples similar to "WebServer.h not found", it's a problem with where you put the Webduino folder. The server won't work if the header is directly in the libraries folder.
 
-## Presentation
+## Resources
 
-[Wedbuino Presentation on Google Docs](http://docs.google.com/present/view?id=dd8gqxt8_5c8w9qfg3)
+- [Wedbuino Presentation on Google Docs](http://docs.google.com/present/view?id=dd8gqxt8_5c8w9qfg3)
+- [A Wedbuino based file server](http://playground.arduino.cc//Main/WebduinoFileServer)
+
 
 ## Compatible Ethernet Shields
 

@@ -57,6 +57,10 @@
 #define WEBDUINO_READ_TIMEOUT_IN_MS 1000
 #endif
 
+#ifndef WEBDUINO_URL_PATH_COMMAND_LENGTH
+#define WEBDUINO_URL_PATH_COMMAND_LENGTH 8
+#endif
+
 #ifndef WEBDUINO_FAIL_MESSAGE
 #define WEBDUINO_FAIL_MESSAGE "<h1>EPIC FAIL</h1>"
 #endif
@@ -123,7 +127,7 @@
 extern "C" unsigned long millis(void);
 
 // declare a static string
-#define P(name)   static const prog_uchar name[] PROGMEM
+#define P(name)   static const unsigned char name[] PROGMEM
 
 // returns the number of elements in the array
 #define SIZE(array) (sizeof(array) / sizeof(*array))
@@ -158,6 +162,13 @@ public:
   typedef void Command(WebServer &server, ConnectionType type,
                        char *url_tail, bool tail_complete);
 
+  // Prototype for the optional function which consumes the URL path itself.
+  // url_path contains pointers to the seperate parts of the URL path where '/'
+  //          was used as the delimiter.
+  typedef void UrlPathCommand(WebServer &server, ConnectionType type,
+                              char **url_path, char *url_tail,
+                              bool tail_complete);
+
   // constructor for webserver object
   WebServer(const char *urlPrefix = "", int port = 80);
 
@@ -184,18 +195,23 @@ public:
   // add a new command to be run at the URL specified by verb
   void addCommand(const char *verb, Command *cmd);
 
+  // Set command that's run if default command or URL specified commands do
+  // not run, uses extra url_path parameter to allow resolving the URL in the
+  // function.
+  void setUrlPathCommand(UrlPathCommand *cmd);
+
   // utility function to output CRLF pair
   void printCRLF();
 
   // output a string stored in program memory, usually one defined
   // with the P macro
-  void printP(const prog_uchar *str);
+  void printP(const unsigned char *str);
 
   // inline overload for printP to handle signed char strings
-  void printP(const prog_char *str) { printP((prog_uchar*)str); }
+  void printP(const char *str) { printP((unsigned char*)str); }
 
   // output raw data stored in program memory
-  void writeP(const prog_uchar *data, size_t length);
+  void writeP(const unsigned char *data, size_t length);
 
   // output HTML for a radio button
   void radioButton(const char *name, const char *val,
@@ -256,6 +272,9 @@ public:
   // output headers and a message indicating "500 Internal Server Error"
   void httpServerError();
 
+  // output headers indicating "204 No Content" and no further message
+  void httpNoContent();
+
   // output standard headers indicating "200 Success".  You can change the
   // type of the data you're outputting or also add extra headers like
   // "Refresh: 1".  Extra headers should each be terminated with CRLF.
@@ -272,6 +291,9 @@ public:
   virtual size_t write(const char *str);
   virtual size_t write(const uint8_t *buffer, size_t size);
   size_t write(const char *data, size_t length);
+
+  // tells if there is anything to process
+  uint8_t available();
 
 private:
   EthernetServer m_server;
@@ -293,6 +315,7 @@ private:
     Command *cmd;
   } m_commands[8];
   char m_cmdCount;
+  UrlPathCommand *m_urlPathCmd;
 
   void reset();
   void getRequest(WebServer::ConnectionType &type, char *request, int *length);
@@ -326,7 +349,8 @@ WebServer::WebServer(const char *urlPrefix, int port) :
   m_cmdCount(0),
   m_contentLength(0),
   m_failureCmd(&defaultFailCmd),
-  m_defaultCmd(&defaultFailCmd)
+  m_defaultCmd(&defaultFailCmd),
+  m_urlPathCmd(NULL)
 {
 }
 
@@ -354,6 +378,11 @@ void WebServer::addCommand(const char *verb, Command *cmd)
   }
 }
 
+void WebServer::setUrlPathCommand(UrlPathCommand *cmd)
+{
+  m_urlPathCmd = cmd;
+}
+
 size_t WebServer::write(uint8_t ch)
 {
   return m_client.write(ch);
@@ -374,7 +403,7 @@ size_t WebServer::write(const char *buffer, size_t length)
   return m_client.write((const uint8_t *)buffer, length);
 }
 
-void WebServer::writeP(const prog_uchar *data, size_t length)
+void WebServer::writeP(const unsigned char *data, size_t length)
 {
   // copy data out of program memory into local storage, write out in
   // chunks of 32 bytes to avoid extra short TCP/IP packets
@@ -396,7 +425,7 @@ void WebServer::writeP(const prog_uchar *data, size_t length)
     m_client.write(buffer, bufferEnd);
 }
 
-void WebServer::printP(const prog_uchar *str)
+void WebServer::printP(const unsigned char *str)
 {
   // copy data out of program memory into local storage, write out in
   // chunks of 32 bytes to avoid extra short TCP/IP packets
@@ -469,6 +498,36 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
         return true;
       }
     }
+    // Check if UrlPathCommand is assigned.
+    if (m_urlPathCmd != NULL)
+    {
+      // Initialize with null bytes, so number of parts can be determined.
+      char *url_path[WEBDUINO_URL_PATH_COMMAND_LENGTH] = {0};
+      int part = 0;
+
+      // URL path should be terminated with null byte.
+      *(verb + verb_len) = 0;
+
+      // First URL path part is at the start of verb.
+      url_path[part++] = verb;
+      // Replace all slashes ('/') with a null byte so every part of the URL
+      // path is a seperate string. Add every char following a '/' as a new
+      // part of the URL, even if that char is a '/' (which will be replaced
+      // with a null byte).
+      for (char * p = verb; p < verb + verb_len; p++)
+      {
+        if (*p == '/')
+        {
+          *p = 0;
+          url_path[part++] = p + 1;
+          // Don't try to assign out of array bounds.
+          if (part == WEBDUINO_URL_PATH_COMMAND_LENGTH) break;
+        }
+      }
+      m_urlPathCmd(*this, requestType, url_path,
+                   verb + verb_len + qm_offset, tail_complete);
+      return true;
+    }
   }
   return false;
 }
@@ -524,10 +583,15 @@ void WebServer::processConnection(char *buff, int *bufflen)
         favicon(requestType);
       }
     }
-    if      (requestType == INVALID ||
-             strncmp(buff, m_urlPrefix, urlPrefixLen) != 0 ||
-             !dispatchCommand(requestType, buff + urlPrefixLen,
-                              (*bufflen) >= 0))
+    // Only try to dispatch command if request type and prefix are correct.
+    // Fix by quarencia.
+    if (requestType == INVALID ||
+        strncmp(buff, m_urlPrefix, urlPrefixLen) != 0)
+    {
+      m_failureCmd(*this, requestType, buff, (*bufflen) >= 0);
+    }
+    else if (!dispatchCommand(requestType, buff + urlPrefixLen,
+             (*bufflen) >= 0))
     {
       m_failureCmd(*this, requestType, buff, (*bufflen) >= 0);
     }
@@ -610,6 +674,17 @@ void WebServer::httpServerError()
     WEBDUINO_SERVER_ERROR_MESSAGE;
 
   printP(failMsg);
+}
+
+void WebServer::httpNoContent()
+{
+  P(noContentMsg) =
+    "HTTP/1.0 204 NO CONTENT" CRLF
+    WEBDUINO_SERVER_HEADER
+    CRLF
+    CRLF;
+
+  printP(noContentMsg);
 }
 
 void WebServer::httpSuccess(const char *contentType,
@@ -804,8 +879,8 @@ void WebServer::readHeader(char *value, int valueLen)
     {
       *value++=ch;
       --valueLen;
-      ch = read();
     }
+    ch = read();
   } while (ch != '\r');
   push(ch);
 }
@@ -958,7 +1033,7 @@ URLPARAM_RESULT WebServer::nextURLparam(char **tail, char *name, int nameLen,
       *name++ = ch;
       --nameLen;
     }
-    else
+    else if(keep_scanning)
       result = URLPARAM_NAME_OFLO;
   }
 
@@ -1014,7 +1089,7 @@ URLPARAM_RESULT WebServer::nextURLparam(char **tail, char *name, int nameLen,
         *value++ = ch;
         --valueLen;
       }
-      else
+      else if(keep_scanning)
         result = (result == URLPARAM_OK) ?
           URLPARAM_VALUE_OFLO :
           URLPARAM_BOTH_OFLO;
@@ -1168,6 +1243,10 @@ void WebServer::radioButton(const char *name, const char *val,
                             const char *label, bool selected)
 {
   outputCheckboxOrRadio("radio", name, val, label, selected);
+}
+
+uint8_t WebServer::available(){
+  return m_server.available();
 }
 
 #endif // WEBDUINO_NO_IMPLEMENTATION
