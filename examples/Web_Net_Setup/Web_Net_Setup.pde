@@ -2,7 +2,7 @@
 Author:     Matthias Maderer
 Date:       07.03.2013
 Version:    1.0.1
-web:        www.edvler-blog.de
+web:        www.edvler-blog.de/arduino_networksetup_webinterface_with_eeprom
 
 This is a sample Sketch for Webduino!
 More informations about Webduino can be found at https://github.com/sirleech/Webduino
@@ -12,19 +12,22 @@ For more informations about EEPROMAnything.h look at http://playground.arduino.c
 
 /*
 * With this example its possible to configure the network configuration of the
-* Arduino board over a webinterface. Imagine like your router setup.
+* Arduino Ethernet Shield with a webinterface. Imagine like your router setup.
 * 
 * It's possible to configure the following network settings:
+* - MAC address
 * - IP address
 * - Subnet
 * - Gateway
 * - DNS Server
 * - Webserver port
-* - USE DHCP YES/NO
+* - USE DHCP YES/NO (if you use DHCP connect per serial port - 9600 baud - on powerup to see which ip address is assigned)
 * - DHCP renew interval
 *
 * Other functions:
 * - Display DHCP renew status
+* - Display DHCP renew timestamp
+* - Display Arduino uptime
 * - Display used RAM
 * 
 * You can configure default settings. This settings are used wenn no configuration is present.
@@ -63,6 +66,7 @@ For more informations about EEPROMAnything.h look at http://playground.arduino.c
 #define WEBDUINO_FAVICON_DATA "" // no favicon
 //#define DEBUG  //uncomment for serial debug output
 #define USE_SYSTEM_LIBRARY //comment out if you want to save some space (about 1 Byte). You wouldn't see uptime and free RAM if it's commented out.
+#define SERIAL_BAUD 9600
 
 
 #include "SPI.h" // new include
@@ -730,9 +734,7 @@ void errorHTML(WebServer &server, WebServer::ConnectionType type, char *url_tail
 */
 void setup()
 {
-  #ifdef DEBUG
-    Serial.begin(9600);
-  #endif
+  Serial.begin(SERIAL_BAUD);
   
   /* initialize the Ethernet adapter with the settings from eeprom */
   delay(200); // some time to settle
