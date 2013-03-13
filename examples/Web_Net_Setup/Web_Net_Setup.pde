@@ -1,8 +1,8 @@
 /* Web_Net_Setup.pde - example for a webinterface to set the network configuration 
 Author:     Matthias Maderer
 Date:       07.03.2013
-Version:    1.0
-web:        www.edvler-blog.de
+Version:    1.0.1
+web:        www.edvler-blog.de/arduino_networksetup_webinterface_with_eeprom
 
 This is a sample Sketch for Webduino!
 More informations about Webduino can be found at https://github.com/sirleech/Webduino
@@ -12,16 +12,23 @@ For more informations about EEPROMAnything.h look at http://playground.arduino.c
 
 /*
 * With this example its possible to configure the network configuration of the
-* Arduino board over a webinterface. Imagine like your router setup.
+* Arduino Ethernet Shield with a webinterface. Imagine like your router setup.
 * 
 * It's possible to configure the following network settings:
+* - MAC address
 * - IP address
 * - Subnet
 * - Gateway
 * - DNS Server
 * - Webserver port
-* - USE DHCP YES/NO
+* - USE DHCP YES/NO (if you use DHCP connect per serial port - 9600 baud - on powerup to see which ip address is assigned)
 * - DHCP renew interval
+*
+* Other functions:
+* - Display DHCP renew status
+* - Display DHCP renew timestamp
+* - Display Arduino uptime
+* - Display used RAM
 * 
 * You can configure default settings. This settings are used wenn no configuration is present.
 * Look at the function set_EEPROM_Default().
@@ -48,7 +55,8 @@ For more informations about EEPROMAnything.h look at http://playground.arduino.c
 * Keep this in mind.
 *
 * Resources:
-* 27.000 Bytes
+* There are many Strings for the HTML site. The compiled size is about 27.000 Bytes. Aprox. 2000 byte of SRAM is used.
+* On smaller Arduinos this may cause problems. I've tested it on a MEGA 2560.
 *
 * BUGS:
 * - After uploading your sketch the arduino is not reachable. --> Reset your Arduino!!
@@ -57,6 +65,8 @@ For more informations about EEPROMAnything.h look at http://playground.arduino.c
 
 #define WEBDUINO_FAVICON_DATA "" // no favicon
 //#define DEBUG  //uncomment for serial debug output
+#define USE_SYSTEM_LIBRARY //comment out if you want to save some space (about 1 Byte). You wouldn't see uptime and free RAM if it's commented out.
+#define SERIAL_BAUD 9600
 
 
 #include "SPI.h" // new include
@@ -90,7 +100,10 @@ struct config_t
     unsigned int webserverPort;
 } eeprom_config;
 
-/* The default Ethernet settings. 
+/** 
+* set_EEPROM_Default() function
+*
+* The default settings. 
 * This settings are used when no config is present or the reset button is pressed.
 */
 void set_EEPROM_Default() {
@@ -99,21 +112,21 @@ void set_EEPROM_Default() {
     eeprom_config.use_dhcp=0; // use DHCP per default
     eeprom_config.dhcp_refresh_minutes=60; // refresh the DHCP every 60 minutes
   
-    // set the default MAC address. In this case its DE:AD:BE:EF:11:22
+    // set the default MAC address. In this case its DE:AD:BE:EF:FE:ED
     eeprom_config.mac[0]=0xDE;  
     eeprom_config.mac[1]=0xAD;
     eeprom_config.mac[2]=0xBE;
     eeprom_config.mac[3]=0xEF;
-    eeprom_config.mac[4]=0x11;
-    eeprom_config.mac[5]=0x11;
+    eeprom_config.mac[4]=0xFE;
+    eeprom_config.mac[5]=0xED;
     
-    // set the default IP address for the arduino. In this case its 172.31.0.111
+    // set the default IP address for the arduino. In this case its 192.168.0.111
     eeprom_config.ip[0]=192;
     eeprom_config.ip[1]=168;
     eeprom_config.ip[2]=0;
     eeprom_config.ip[3]=111;
   
-    // set the default GATEWAY. In this case its 172.31.0.254
+    // set the default GATEWAY. In this case its 192.168.0.254
     eeprom_config.gateway[0]=192;
     eeprom_config.gateway[1]=168;
     eeprom_config.gateway[2]=0;
@@ -125,7 +138,7 @@ void set_EEPROM_Default() {
     eeprom_config.subnet[2]=255;
     eeprom_config.subnet[3]=0;
 
-    // set the default DNS SERVER. In this case its 172.31.0.254
+    // set the default DNS SERVER. In this case its 192.168.0.254
     eeprom_config.dns_server[0]=192;
     eeprom_config.dns_server[1]=168;
     eeprom_config.dns_server[2]=0;
@@ -166,6 +179,12 @@ void read_EEPROM_Settings() {
   } 
 }
 
+/**
+* print_EEPROM_Settings() function
+*
+* This function is used for debugging the configuration.
+* It prints the actual configuration to the serial port.
+*/
 #ifdef DEBUG
 void print_EEPROM_Settings() {
     Serial.print("IP: ");
@@ -233,21 +252,27 @@ void print_EEPROM_Settings() {
 
 
 /* START Network section #######################################################################################################################################
-* Webserver Code
+* Code for setting up network connection
 */
-long last_dhcp_renew;
+unsigned long last_dhcp_renew;
 byte dhcp_state;
 
 /**
-renewDHCP() function
-Renew the DHCP relase in a given interval.
+* renewDHCP() function
+* Renew the DHCP relase in a given interval.
+* 
+* Overview:
+* - Check if interval = 0 and set it to 1
+* - Check if renew interval is reached and renew the lease
 */
 void renewDHCP(int interval) {
+  unsigned long interval_millis = interval * 60000;
+
   if (interval == 0 ) {
      interval = 1; 
   }
   if (eeprom_config.use_dhcp==1) {
-    if((millis() - last_dhcp_renew) >  (interval*60*1000)) {
+    if((millis() - last_dhcp_renew) >  interval_millis) {
       last_dhcp_renew=millis();
       dhcp_state = Ethernet.maintain();
     }
@@ -256,7 +281,7 @@ void renewDHCP(int interval) {
 
 
 /**
-* setupNetwork() function (webpage)
+* setupNetwork() function
 * This function is used to setupup the network according to the values stored in the eeprom
 *
 * Overview:
@@ -291,7 +316,18 @@ void setupNetwork() {
 // END Network section #########################################################################################################################################
 
 
+/* WEB-Server section #######################################################################################################################################
+* Webserver Code
+*/
 
+#ifdef USE_SYSTEM_LIBRARY
+#include "system.h"
+System sys;
+#endif
+
+/* Store all string in the FLASH storage to free SRAM.
+The P() is a function from Webduino.
+*/
 P(Page_start) = "<html><head><title>Web_EEPROM_Setup</title></head><body>\n";
 P(Page_end) = "</body></html>";
 
@@ -333,25 +369,25 @@ P(table_end) = "</table>";
 
 P(Config_set) = "<font size=\"6\" color=\"red\">New configuration stored! <br>Please turn off and on your Arduino or use the reset button!</font><br>";
 
-/*
-<script>
+P(DHCP_STATE_TIME) = "DHCP last renew timestamp (sec)";
+P(DHCP_STATE) = "DHCP renew return code (sec)";
 
-function an()
-{document.getElementById('dynDiv').style.visibility = 'visible';}
 
-function aus()
-{document.getElementById('dynDiv').style.visibility = 'hidden';}
+P(UPTIME) = "Uptime: ";
 
-</script>
-
-<div id='dynDiv' style='visibility:hidden'>nn</div> .. mehr auf http://w-w-w.ms/a1v0si#3127029
-*/
-
-//P(Form_input_cb_start) = "<input type=\"checkbox\" name=\"";
+#ifdef USE_SYSTEM_LIBRARY
+P(RAM_1) = "RAM (byte): ";
+P(RAM_2) = " free of ";
+#endif
 
 /* This creates an pointer to instance of the webserver. */
 WebServer * webserver;
 
+
+/**
+* indexHTML() function
+* This function is used to send the index.html to the client.
+*/
 void indexHTML(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)
 {
   /* this line sends the standard "we're all OK" headers back to the
@@ -371,9 +407,20 @@ void indexHTML(WebServer &server, WebServer::ConnectionType type, char *url_tail
     
 }
 
+/**
+* setupNetHTML() function
+* This function is used to send the setupNet.html to the client.
+*
+* Overview:
+* - Send a HTTP 200 OK Header
+* - If get parameters exists assign them to the corresponding variable in the eeprom_config struct
+* - Print the configuration
+*
+* Parameters are simple numbers. The name of the parameter is converted to an int with the atoi function.
+* This saves some code for setting the MAC and IP addresses.
+*/
 #define NAMELEN 5
 #define VALUELEN 7
-
 void setupNetHTML(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)
 {
   URLPARAM_RESULT rc;
@@ -456,170 +503,216 @@ void setupNetHTML(WebServer &server, WebServer::ConnectionType type, char *url_t
     }
     EEPROM_writeAnything(0, eeprom_config);
   }
+
+  //print the form
+  server.printP(Form_eth_start);
   
-  // if no params given show the actual configuration
-
-    server.printP(Form_eth_start);
+  if(params_present==true) {
+     server.printP(Config_set);
+  }
     
-    if(params_present==true) {
-       server.printP(Config_set);
-    }
-      
-    server.printP(table_start);
-    
-    // print the current MAC
-    server.printP(table_tr_start);
-    server.printP(table_td_start);
-    server.printP(MAC);
-    server.printP(table_td_end);
-    server.printP(table_td_start);
-    for (int a=0;a<6;a++) {
-      server.printP(Form_input_text_start);
-      server.print(a);
-      server.printP(Form_input_value);
-      server.print(eeprom_config.mac[a],HEX);
-      server.printP(Form_input_size2);    
-      server.printP(Form_input_end);
-    }
-    server.printP(table_td_end);
-    server.printP(table_tr_end);
-
-    // print the current IP
-    server.printP(table_tr_start);
-    server.printP(table_td_start);
-    server.printP(IP);
-    server.printP(table_td_end);
-    server.printP(table_td_start);    
-    for (int a=0;a<4;a++) {
-      server.printP(Form_input_text_start);
-      server.print(a+6);
-      server.printP(Form_input_value);
-      server.print(eeprom_config.ip[a]);
-      server.printP(Form_input_size3);
-      server.printP(Form_input_end);
-    }
-    server.printP(table_td_end);
-    server.printP(table_tr_end);
-    
-
-    // print the current SUBNET
-    server.printP(table_tr_start);
-    server.printP(table_td_start);
-    server.printP(SUBNET);
-    server.printP(table_td_end);
-    server.printP(table_td_start); 
-    for (int a=0;a<4;a++) {
-      server.printP(Form_input_text_start);
-      server.print(a+10);
-      server.printP(Form_input_value);
-      server.print(eeprom_config.subnet[a]);
-      server.printP(Form_input_size3);
-      server.printP(Form_input_end);
-    }
-    server.printP(table_td_end);
-    server.printP(table_tr_end);
-
-    // print the current GATEWAY
-    server.printP(table_tr_start);
-    server.printP(table_td_start);
-    server.printP(GW);
-    server.printP(table_td_end);
-    server.printP(table_td_start); 
-    for (int a=0;a<4;a++) {
-      server.printP(Form_input_text_start);
-      server.print(a+14);
-      server.printP(Form_input_value);
-      server.print(eeprom_config.gateway[a]);
-      server.printP(Form_input_size3);
-      server.printP(Form_input_end);
-    }
-    server.printP(table_td_end);
-    server.printP(table_tr_end);
-
-    // print the current DNS-SERVER
-    server.printP(table_tr_start);
-    server.printP(table_td_start);
-    server.printP(DNS_SERVER);
-    server.printP(table_td_end);
-    server.printP(table_td_start); 
-    for (int a=0;a<4;a++) {
-      server.printP(Form_input_text_start);
-      server.print(a+18);
-      server.printP(Form_input_value);
-      server.print(eeprom_config.dns_server[a]);
-      server.printP(Form_input_size3);
-      server.printP(Form_input_end);
-    }
-    server.printP(table_td_end);
-    server.printP(table_tr_end);
-
-    
-    // print the current webserver port
-    server.printP(table_tr_start);
-    server.printP(table_td_start);
-    server.printP(WEB_PORT);
-    server.printP(table_td_end);
-    server.printP(table_td_start);
+  server.printP(table_start);
+  
+  // print the current MAC
+  server.printP(table_tr_start);
+  server.printP(table_td_start);
+  server.printP(MAC);
+  server.printP(table_td_end);
+  server.printP(table_td_start);
+  for (int a=0;a<6;a++) {
     server.printP(Form_input_text_start);
-    server.print(22);
+    server.print(a);
     server.printP(Form_input_value);
-    server.print(eeprom_config.webserverPort);
+    server.print(eeprom_config.mac[a],HEX);
+    server.printP(Form_input_size2);    
     server.printP(Form_input_end);
-    server.printP(table_td_end);
-    server.printP(table_tr_end);
-    
-    //print the current DHCP config
-    server.printP(table_tr_start);
-    server.printP(table_td_start);
-    server.printP(DHCP_ACTIVE);
-    server.printP(table_td_end);
-    server.printP(table_td_start);
-    server.printP(Form_cb);
-    server.print("0\"");
-     if(eeprom_config.use_dhcp != 1) {
-      server.printP(Form_cb_checked);
-    }
-    server.printP(Form_cb_off);   
-    
-    server.printP(Form_cb);
-    server.print("1\"");
-     if(eeprom_config.use_dhcp == 1) {
-      server.printP(Form_cb_checked);
-    }
-    server.printP(Form_cb_on);   
-    server.printP(table_td_end);
-    server.printP(table_tr_end);
-    
-    //print the current DHCP renew time
-    server.printP(table_tr_start);
-    server.printP(table_td_start);
-    server.printP(DHCP_REFRESH);
-    server.printP(table_td_end);
-    server.printP(table_td_start);
+  }
+  server.printP(table_td_end);
+  server.printP(table_tr_end);
+
+  // print the current IP
+  server.printP(table_tr_start);
+  server.printP(table_td_start);
+  server.printP(IP);
+  server.printP(table_td_end);
+  server.printP(table_td_start);    
+  for (int a=0;a<4;a++) {
     server.printP(Form_input_text_start);
-    server.print(24);
+    server.print(a+6);
     server.printP(Form_input_value);
-    server.print(eeprom_config.dhcp_refresh_minutes);
+    server.print(eeprom_config.ip[a]);
     server.printP(Form_input_size3);
     server.printP(Form_input_end);
+  }
+  server.printP(table_td_end);
+  server.printP(table_tr_end);
+  
+
+  // print the current SUBNET
+  server.printP(table_tr_start);
+  server.printP(table_td_start);
+  server.printP(SUBNET);
+  server.printP(table_td_end);
+  server.printP(table_td_start); 
+  for (int a=0;a<4;a++) {
+    server.printP(Form_input_text_start);
+    server.print(a+10);
+    server.printP(Form_input_value);
+    server.print(eeprom_config.subnet[a]);
+    server.printP(Form_input_size3);
+    server.printP(Form_input_end);
+  }
+  server.printP(table_td_end);
+  server.printP(table_tr_end);
+
+  // print the current GATEWAY
+  server.printP(table_tr_start);
+  server.printP(table_td_start);
+  server.printP(GW);
+  server.printP(table_td_end);
+  server.printP(table_td_start); 
+  for (int a=0;a<4;a++) {
+    server.printP(Form_input_text_start);
+    server.print(a+14);
+    server.printP(Form_input_value);
+    server.print(eeprom_config.gateway[a]);
+    server.printP(Form_input_size3);
+    server.printP(Form_input_end);
+  }
+  server.printP(table_td_end);
+  server.printP(table_tr_end);
+
+  // print the current DNS-SERVER
+  server.printP(table_tr_start);
+  server.printP(table_td_start);
+  server.printP(DNS_SERVER);
+  server.printP(table_td_end);
+  server.printP(table_td_start); 
+  for (int a=0;a<4;a++) {
+    server.printP(Form_input_text_start);
+    server.print(a+18);
+    server.printP(Form_input_value);
+    server.print(eeprom_config.dns_server[a]);
+    server.printP(Form_input_size3);
+    server.printP(Form_input_end);
+  }
+  server.printP(table_td_end);
+  server.printP(table_tr_end);
+
+  
+  // print the current webserver port
+  server.printP(table_tr_start);
+  server.printP(table_td_start);
+  server.printP(WEB_PORT);
+  server.printP(table_td_end);
+  server.printP(table_td_start);
+  server.printP(Form_input_text_start);
+  server.print(22);
+  server.printP(Form_input_value);
+  server.print(eeprom_config.webserverPort);
+  server.printP(Form_input_end);
+  server.printP(table_td_end);
+  server.printP(table_tr_end);
+  
+  //print the current DHCP config
+  server.printP(table_tr_start);
+  server.printP(table_td_start);
+  server.printP(DHCP_ACTIVE);
+  server.printP(table_td_end);
+  server.printP(table_td_start);
+  server.printP(Form_cb);
+  server.print("0\"");
+   if(eeprom_config.use_dhcp != 1) {
+    server.printP(Form_cb_checked);
+  }
+  server.printP(Form_cb_off);   
+  
+  server.printP(Form_cb);
+  server.print("1\"");
+  if(eeprom_config.use_dhcp == 1) {
+    server.printP(Form_cb_checked);
+  }
+  server.printP(Form_cb_on);   
+  server.printP(table_td_end);
+  server.printP(table_tr_end);
+  
+  //print the current DHCP renew time
+  server.printP(table_tr_start);
+  server.printP(table_td_start);
+  server.printP(DHCP_REFRESH);
+  server.printP(table_td_end);
+  server.printP(table_td_start);
+  server.printP(Form_input_text_start);
+  server.print(24);
+  server.printP(Form_input_value);
+  server.print(eeprom_config.dhcp_refresh_minutes);
+  server.printP(Form_input_size3);
+  server.printP(Form_input_end);
+  server.printP(table_td_end);
+  server.printP(table_tr_end);
+
+  //print DHCP status
+  if(eeprom_config.use_dhcp == 1) {
+    server.printP(table_tr_start);
+    server.printP(table_td_start);	
+    server.printP(DHCP_STATE);
+    server.printP(table_td_end);
+    server.printP(table_td_start);
+    server.print(dhcp_state);
     server.printP(table_td_end);
     server.printP(table_tr_end);
-    
-    
+	 
+    server.printP(table_tr_start);
+    server.printP(table_td_start);	
+    server.printP(DHCP_STATE_TIME);
+    server.printP(table_td_end);
+    server.printP(table_td_start);
+    server.print(last_dhcp_renew/1000);
+    server.printP(table_td_end);
+    server.printP(table_tr_end);
+  }
+  
+  #ifdef USE_SYSTEM_LIBRARY
+  //print uptime
+  server.printP(table_tr_start);
+  server.printP(table_td_start);	
+  server.printP(UPTIME);
+  server.printP(table_td_end);
+  server.printP(table_td_start);
+  server.print(sys.uptime());
+  server.printP(table_td_end);
+  server.printP(table_tr_end); 
 
+  server.printP(table_tr_start);
+  server.printP(table_td_start);
+  server.printP(RAM_1);	
+  server.print(sys.ramFree());
+  server.printP(RAM_2);
+  server.print(sys.ramSize());
+  server.printP(table_td_end);
+  server.printP(table_tr_end); 
+  #endif
+  
   server.printP(table_end);
   
   //print the send button
   server.printP(Form_input_send);    
   server.printP(Form_end);
   
+
+  
   server.printP(Page_end);
 
 }
 
+/**
+* errorHTML() function
+* This function is called whenever a non extisting page is called.
+* It sends a HTTP 400 Bad Request header and the same as text.
+*/
 void errorHTML(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)
 {
-  /* this line sends the standard "HTPP 400 Bad Request" headers back to the
+  /* this line sends the standard "HTTP 400 Bad Request" headers back to the
      browser */
   server.httpFail();
 
@@ -633,14 +726,15 @@ void errorHTML(WebServer &server, WebServer::ConnectionType type, char *url_tail
   server.printP(Page_end);
 }
 
+// END WEBCODE ######################################################################################################################################################
 
-
-
+/**
+* setup() function
+* This function is called whenever the arduino is turned on.
+*/
 void setup()
 {
-  #ifdef DEBUG
-    Serial.begin(9600);
-  #endif
+  Serial.begin(SERIAL_BAUD);
   
   /* initialize the Ethernet adapter with the settings from eeprom */
   delay(200); // some time to settle
@@ -669,8 +763,20 @@ void setup()
   webserver->begin();
 }
 
+/**
+* loop() function
+* Runs forver ....
+* 
+* Overview:
+* - Renew the DHCP lease
+* - Serve web clients
+*
+*/
 void loop()
 {
+  // renew DHCP lease
+  renewDHCP(eeprom_config.dhcp_refresh_minutes);
+
   char buff[200];
   int len = 200;
 
