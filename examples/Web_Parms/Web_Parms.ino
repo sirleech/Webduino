@@ -154,9 +154,7 @@ void parsedCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail
 {
   URLPARAM_RESULT rc;
   char name[NAMELEN];
-  int  name_len;
   char value[VALUELEN];
-  int value_len;
 
   /* this line sends the standard "we're all OK" headers back to the
      browser */
@@ -219,7 +217,7 @@ void parsedCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail
 
 void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)
 {
-  /* this line sends the standard "we're all OK" headers back to the
+  /* this line sends the "HTTP 400 - Bad Request" headers back to the
      browser */
   server.httpFail();
 

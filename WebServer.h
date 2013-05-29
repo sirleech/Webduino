@@ -127,11 +127,18 @@
 extern "C" unsigned long millis(void);
 
 // declare a static string
+#ifdef __AVR__
 #define P(name)   static const unsigned char name[] PROGMEM
+#else
+#define P(name)   static const unsigned char name[]
+#endif
 
 // returns the number of elements in the array
 #define SIZE(array) (sizeof(array) / sizeof(*array))
 
+#ifdef _VARIANT_ARDUINO_DUE_X_
+#define pgm_read_byte(ptr) (unsigned char)(* ptr)
+#endif
 /********************************************************************
  * DECLARATIONS
  ********************************************************************/
