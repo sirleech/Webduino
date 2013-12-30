@@ -272,7 +272,7 @@ public:
 
   // output headers and a message indicating a server error
   void httpFail();
-  
+
   // output headers and a message indicating "401 Unauthorized"
   void httpUnauthorized();
 
@@ -438,7 +438,7 @@ void WebServer::printP(const unsigned char *str)
   // chunks of 32 bytes to avoid extra short TCP/IP packets
   uint8_t buffer[32];
   size_t bufferEnd = 0;
-  
+
   while ((buffer[bufferEnd++] = pgm_read_byte(str++)))
   {
     if (bufferEnd == 32)
@@ -461,7 +461,7 @@ void WebServer::printCRLF()
 bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
         bool tail_complete)
 {
-  // if there is no URL, i.e. we have a prefix and it's requested without a 
+  // if there is no URL, i.e. we have a prefix and it's requested without a
   // trailing slash or if the URL is just the slash
   if ((verb[0] == 0) || ((verb[0] == '/') && (verb[1] == 0)))
   {
@@ -613,7 +613,7 @@ void WebServer::processConnection(char *buff, int *bufflen)
 bool WebServer::checkCredentials(const char authCredentials[45])
 {
   char basic[7] = "Basic ";
-  if((0 == strncmp(m_authCredentials,basic,6)) && 
+  if((0 == strncmp(m_authCredentials,basic,6)) &&
      (0 == strcmp(authCredentials, m_authCredentials + 6))) return true;
   return false;
 }
@@ -1168,7 +1168,7 @@ void WebServer::getRequest(WebServer::ConnectionType &type,
 
 void WebServer::processHeaders()
 {
-  // look for three things: the Content-Length header, the Authorization 
+  // look for three things: the Content-Length header, the Authorization
   // header, and the double-CRLF that ends the headers.
 
   // empty the m_authCredentials before every run of this function.
