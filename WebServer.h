@@ -353,10 +353,10 @@ WebServer::WebServer(const char *urlPrefix, int port) :
   m_client(255),
   m_urlPrefix(urlPrefix),
   m_pushbackDepth(0),
-  m_cmdCount(0),
   m_contentLength(0),
   m_failureCmd(&defaultFailCmd),
   m_defaultCmd(&defaultFailCmd),
+  m_cmdCount(0),
   m_urlPathCmd(NULL)
 {
 }
