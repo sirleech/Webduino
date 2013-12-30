@@ -308,7 +308,7 @@ private:
   const char *m_urlPrefix;
 
   unsigned char m_pushback[32];
-  char m_pushbackDepth;
+  unsigned char m_pushbackDepth;
 
   int m_contentLength;
   char m_authCredentials[51];
@@ -321,7 +321,7 @@ private:
     const char *verb;
     Command *cmd;
   } m_commands[8];
-  char m_cmdCount;
+  unsigned char m_cmdCount;
   UrlPathCommand *m_urlPathCmd;
 
   void reset();
@@ -480,9 +480,9 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
   // if the first character is a slash,  there's more after it.
   if (verb[0] == '/')
   {
-    char i;
+    unsigned char i;
     char *qm_loc;
-    int verb_len;
+    unsigned int verb_len;
     int qm_offset;
     // Skip over the leading "/",  because it makes the code more
     // efficient and easier to understand.
