@@ -439,7 +439,7 @@ void WebServer::printP(const unsigned char *str)
   uint8_t buffer[32];
   size_t bufferEnd = 0;
   
-  while (buffer[bufferEnd++] = pgm_read_byte(str++))
+  while ((buffer[bufferEnd++] = pgm_read_byte(str++)))
   {
     if (bufferEnd == 32)
     {
