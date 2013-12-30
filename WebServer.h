@@ -147,11 +147,11 @@ extern "C" unsigned long millis(void);
  * when you call nextURLparam AFTER the last parameter is read.  The
  * last actual parameter gets an "OK" return code. */
 
-typedef enum URLPARAM_RESULT { URLPARAM_OK,
-                               URLPARAM_NAME_OFLO,
-                               URLPARAM_VALUE_OFLO,
-                               URLPARAM_BOTH_OFLO,
-                               URLPARAM_EOS         // No params left
+enum URLPARAM_RESULT { URLPARAM_OK,
+                       URLPARAM_NAME_OFLO,
+                       URLPARAM_VALUE_OFLO,
+                       URLPARAM_BOTH_OFLO,
+                       URLPARAM_EOS         // No params left
 };
 
 class WebServer: public Print
@@ -308,7 +308,7 @@ private:
   const char *m_urlPrefix;
 
   unsigned char m_pushback[32];
-  char m_pushbackDepth;
+  unsigned char m_pushbackDepth;
 
   int m_contentLength;
   char m_authCredentials[51];
@@ -321,7 +321,7 @@ private:
     const char *verb;
     Command *cmd;
   } m_commands[8];
-  char m_cmdCount;
+  unsigned char m_cmdCount;
   UrlPathCommand *m_urlPathCmd;
 
   void reset();
@@ -353,10 +353,10 @@ WebServer::WebServer(const char *urlPrefix, int port) :
   m_client(255),
   m_urlPrefix(urlPrefix),
   m_pushbackDepth(0),
-  m_cmdCount(0),
   m_contentLength(0),
   m_failureCmd(&defaultFailCmd),
   m_defaultCmd(&defaultFailCmd),
+  m_cmdCount(0),
   m_urlPathCmd(NULL)
 {
 }
@@ -439,7 +439,7 @@ void WebServer::printP(const unsigned char *str)
   uint8_t buffer[32];
   size_t bufferEnd = 0;
   
-  while (buffer[bufferEnd++] = pgm_read_byte(str++))
+  while ((buffer[bufferEnd++] = pgm_read_byte(str++)))
   {
     if (bufferEnd == 32)
     {
@@ -465,7 +465,7 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
   // trailing slash or if the URL is just the slash
   if ((verb[0] == 0) || ((verb[0] == '/') && (verb[1] == 0)))
   {
-    m_defaultCmd(*this, requestType, "", tail_complete);
+    m_defaultCmd(*this, requestType, (char*)"", tail_complete);
     return true;
   }
   // if the URL is just a slash followed by a question mark
@@ -480,9 +480,9 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
   // if the first character is a slash,  there's more after it.
   if (verb[0] == '/')
   {
-    char i;
+    unsigned char i;
     char *qm_loc;
-    int verb_len;
+    unsigned int verb_len;
     int qm_offset;
     // Skip over the leading "/",  because it makes the code more
     // efficient and easier to understand.
