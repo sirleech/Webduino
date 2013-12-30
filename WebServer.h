@@ -465,7 +465,7 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
   // trailing slash or if the URL is just the slash
   if ((verb[0] == 0) || ((verb[0] == '/') && (verb[1] == 0)))
   {
-    m_defaultCmd(*this, requestType, "", tail_complete);
+    m_defaultCmd(*this, requestType, (char*)"", tail_complete);
     return true;
   }
   // if the URL is just a slash followed by a question mark
