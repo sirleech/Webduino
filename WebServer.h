@@ -350,7 +350,7 @@ private:
 
 WebServer::WebServer(const char *urlPrefix, int port) :
   m_server(port),
-  m_client(255),
+  m_client(MAX_SOCK_NUM),
   m_urlPrefix(urlPrefix),
   m_pushbackDepth(0),
   m_contentLength(0),
@@ -726,7 +726,7 @@ void WebServer::httpSeeOther(const char *otherURL)
 
 int WebServer::read()
 {
-  if (m_client == NULL)
+  if (!m_client)
     return -1;
 
   if (m_pushbackDepth == 0)
