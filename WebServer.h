@@ -28,15 +28,22 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <EthernetClient.h>
-#include <EthernetServer.h>
+
+#ifdef UIPETHERNET_H
+#   include <UIPClient.h>
+#   include <UIPServer.h>
+#   define MAX_SOCK_NUM 255
+#else
+#   include <EthernetClient.h>
+#   include <EthernetServer.h>
+#endif
 
 /********************************************************************
  * CONFIGURATION
  ********************************************************************/
 
 #define WEBDUINO_VERSION 1007
-#define WEBDUINO_VERSION_STRING "1.7"
+#define WEBDUINO_VERSION_STRING "1.7.1"
 
 #if WEBDUINO_SUPRESS_SERVER_HEADER
 #define WEBDUINO_SERVER_HEADER ""
@@ -397,7 +404,12 @@ size_t WebServer::write(uint8_t ch)
 
 size_t WebServer::write(const char *str)
 {
+#ifdef UIPETHERNET_H
+  return m_client.write((const uint8_t *)str, sizeof(str)); 
+#else
   return m_client.write(str);
+#endif
+  
 }
 
 size_t WebServer::write(const uint8_t *buffer, size_t size)

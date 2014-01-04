@@ -36,10 +36,12 @@ These have all been tested with the library successfully:
 - [Adafruit Ethernet Shield w/ Wiznet 811MJ module](http://www.ladyada.net/make/eshield/)
 - [NKC Electronics Ethernet Shield DIY Kit](http://store.nkcelectronics.com/nkc-ethernet-shield-diy-kit-without-wiz812mj-mod812.html)
 
-Shields using the Microchip ENC28J60 chip won't work with the library as that requires more software support for implementating 
-the TCP/IP stack.
+Shields using the Microchip ENC28J60 chip can use ntruchsess' arduino_uip library (https://github.com/ntruchsess/arduino_uip) as a drop-in replacement for the stock Arduino Ethernet library. Take note that since the TCP/IP stack is implemented in software, the compiled sketch size will significantly increase. As a result, if you use an ENC28J60-based shield, your Arduino should have, at the very least, an ATMega328 chip.
 
 ## Version history
+
+### 1.7.1 released Jan 2013
+- added support for ENC28J60 chips via ntruchsess' arduino_uip library.
 
 ### 1.7 released in Jan 2012
 
