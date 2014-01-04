@@ -1,7 +1,15 @@
 /* Web_HelloWorld.pde - very simple Webduino example */
 
 #include "SPI.h"
+/* If you have a Microchip ENC28J60-based Ethernet shield, 
+ * you can use arduino_uip library at https://github.com/ntruchsess/arduino_uip
+ * and replace the line below with:
+ * 
+ *     #include "UIPEthernet.h"
+ *
+ */
 #include "Ethernet.h"
+
 #include "WebServer.h"
 
 /* CHANGE THIS TO YOUR OWN UNIQUE VALUE.  The MAC number should be
