@@ -77,6 +77,10 @@
 #define WEBDUINO_SERVER_ERROR_MESSAGE "<h1>500 Internal Server Error</h1>"
 #endif // WEBDUINO_SERVER_ERROR_MESSAGE
 
+#ifndef WEBDUINO_OUTPUT_BUFFER_SIZE
+#define WEBDUINO_OUTPUT_BUFFER_SIZE 32
+#endif // WEBDUINO_OUTPUT_BUFFER_SIZE
+
 // add '#define WEBDUINO_FAVICON_DATA ""' to your application
 // before including WebServer.h to send a null file as the favicon.ico file
 // otherwise this defaults to a 16x16 px black diode on blue ground
@@ -295,9 +299,6 @@ public:
 
   // implementation of write used to implement Print interface
   virtual size_t write(uint8_t);
-  virtual size_t write(const char *str);
-  virtual size_t write(const uint8_t *buffer, size_t size);
-  size_t write(const char *data, size_t length);
 
   // tells if there is anything to process
   uint8_t available();
@@ -324,6 +325,9 @@ private:
   unsigned char m_cmdCount;
   UrlPathCommand *m_urlPathCmd;
 
+  uint8_t m_buffer[WEBDUINO_OUTPUT_BUFFER_SIZE];
+  uint8_t m_bufFill;
+
   void reset();
   void getRequest(WebServer::ConnectionType &type, char *request, int *length);
   bool dispatchCommand(ConnectionType requestType, char *verb,
@@ -337,6 +341,7 @@ private:
                              char *url_tail, bool tail_complete);
   void noRobots(ConnectionType type);
   void favicon(ConnectionType type);
+  void flushBuf();
 };
 
 /* define this macro if you want to include the header in a sketch source
@@ -357,7 +362,8 @@ WebServer::WebServer(const char *urlPrefix, int port) :
   m_failureCmd(&defaultFailCmd),
   m_defaultCmd(&defaultFailCmd),
   m_cmdCount(0),
-  m_urlPathCmd(NULL)
+  m_urlPathCmd(NULL),
+  m_bufFill(0)
 {
 }
 
@@ -392,70 +398,49 @@ void WebServer::setUrlPathCommand(UrlPathCommand *cmd)
 
 size_t WebServer::write(uint8_t ch)
 {
-  return m_client.write(ch);
+  m_buffer[m_bufFill++] = ch;
+
+  if(m_bufFill == sizeof(m_buffer))
+  {
+    m_client.write(m_buffer, sizeof(m_buffer));
+    m_bufFill = 0;
+  }
+
+  return sizeof(ch);
 }
 
-size_t WebServer::write(const char *str)
+void WebServer::flushBuf()
 {
-  return m_client.write(str);
-}
-
-size_t WebServer::write(const uint8_t *buffer, size_t size)
-{
-  return m_client.write(buffer, size);
-}
-
-size_t WebServer::write(const char *buffer, size_t length)
-{
-  return m_client.write((const uint8_t *)buffer, length);
+  if(m_bufFill > 0)
+  {
+    m_client.write(m_buffer, m_bufFill);
+    m_bufFill = 0;
+  }
 }
 
 void WebServer::writeP(const unsigned char *data, size_t length)
 {
-  // copy data out of program memory into local storage, write out in
-  // chunks of 32 bytes to avoid extra short TCP/IP packets
-  uint8_t buffer[32];
-  size_t bufferEnd = 0;
+  // copy data out of program memory into local storage
 
   while (length--)
   {
-    if (bufferEnd == 32)
-    {
-      m_client.write(buffer, 32);
-      bufferEnd = 0;
-    }
-
-    buffer[bufferEnd++] = pgm_read_byte(data++);
+    write(pgm_read_byte(data++));
   }
-
-  if (bufferEnd > 0)
-    m_client.write(buffer, bufferEnd);
 }
 
 void WebServer::printP(const unsigned char *str)
 {
-  // copy data out of program memory into local storage, write out in
-  // chunks of 32 bytes to avoid extra short TCP/IP packets
-  uint8_t buffer[32];
-  size_t bufferEnd = 0;
+  // copy data out of program memory into local storage
 
-  while ((buffer[bufferEnd++] = pgm_read_byte(str++)))
+  while (uint8_t value = pgm_read_byte(str++))
   {
-    if (bufferEnd == 32)
-    {
-      m_client.write(buffer, 32);
-      bufferEnd = 0;
-    }
+    write(value);
   }
-
-  // write out everything left but trailing NUL
-  if (bufferEnd > 1)
-    m_client.write(buffer, bufferEnd - 1);
 }
 
 void WebServer::printCRLF()
 {
-  m_client.write((const uint8_t *)"\r\n", 2);
+  print(CRLF);
 }
 
 bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
@@ -602,6 +587,8 @@ void WebServer::processConnection(char *buff, int *bufflen)
     {
       m_failureCmd(*this, requestType, buff, (*bufflen) >= 0);
     }
+
+    flushBuf();
 
 #if WEBDUINO_SERIAL_DEBUGGING > 1
     Serial.println("*** stopping connection ***");
