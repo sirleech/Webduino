@@ -1,7 +1,8 @@
 /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil;  c-file-style: "k&r"; c-basic-offset: 2; -*-
 
    Webduino, a simple Arduino web server
-   Copyright 2009-2012 Ben Combee, Ran Talbott, Christopher Lee, Martin Lormes
+   Copyright 2009-2014 Ben Combee, Ran Talbott, Christopher Lee, Martin Lormes
+   Francisco M Cuenca-Acuna
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +29,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <Ethernet.h>
 #include <EthernetClient.h>
 #include <EthernetServer.h>
 
@@ -221,6 +223,12 @@ public:
   // inline overload for printP to handle signed char strings
   void printP(const char *str) { printP((unsigned char*)str); }
 
+  // support for C style formating
+  void printf(char *fmt, ... );
+  #ifdef F
+  void printf(const __FlashStringHelper *format, ... );
+  #endif
+
   // output raw data stored in program memory
   void writeP(const unsigned char *data, size_t length);
 
@@ -299,10 +307,16 @@ public:
 
   // implementation of write used to implement Print interface
   virtual size_t write(uint8_t);
+  virtual size_t write(const uint8_t *buffer, size_t size);
 
   // tells if there is anything to process
   uint8_t available();
 
+  // Flush the send buffer
+  void flushBuf(); 
+
+  // Close the current connection and flush ethernet buffers
+  void reset(); 
 private:
   EthernetServer m_server;
   EthernetClient m_client;
@@ -328,7 +342,6 @@ private:
   uint8_t m_buffer[WEBDUINO_OUTPUT_BUFFER_SIZE];
   uint8_t m_bufFill;
 
-  void reset();
   void getRequest(WebServer::ConnectionType &type, char *request, int *length);
   bool dispatchCommand(ConnectionType requestType, char *verb,
                        bool tail_complete);
@@ -341,7 +354,6 @@ private:
                              char *url_tail, bool tail_complete);
   void noRobots(ConnectionType type);
   void favicon(ConnectionType type);
-  void flushBuf();
 };
 
 /* define this macro if you want to include the header in a sketch source
@@ -409,6 +421,12 @@ size_t WebServer::write(uint8_t ch)
   return sizeof(ch);
 }
 
+size_t WebServer::write(const uint8_t *buffer, size_t size)
+{
+  flushBuf(); //Flush any buffered output
+  return m_client.write(buffer, size);
+}
+
 void WebServer::flushBuf()
 {
   if(m_bufFill > 0)
@@ -442,6 +460,32 @@ void WebServer::printCRLF()
 {
   print(CRLF);
 }
+
+void WebServer::printf(char *fmt, ... )
+{
+  char tmp[128]; // resulting string limited to 128 chars
+  va_list args;
+  va_start (args, fmt );
+  vsnprintf(tmp, 128, fmt, args);
+  va_end (args);
+  print(tmp);
+}
+
+#ifdef F
+void WebServer::printf(const __FlashStringHelper *format, ... )
+{
+  char buf[128]; // resulting string limited to 128 chars
+  va_list ap;
+  va_start(ap, format);
+#ifdef __AVR__
+  vsnprintf_P(buf, sizeof(buf), (const char *)format, ap); // progmem for AVR
+#else
+  vsnprintf(buf, sizeof(buf), (const char *)format, ap); // for the rest of the world
+#endif  
+  va_end(ap);
+  print(buf);
+}
+#endif
 
 bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
         bool tail_complete)
