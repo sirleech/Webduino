@@ -367,7 +367,7 @@ private:
 
 WebServer::WebServer(const char *urlPrefix, int port) :
   m_server(port),
-  m_client(MAX_SOCK_NUM),
+  m_client(),
   m_urlPrefix(urlPrefix),
   m_pushbackDepth(0),
   m_contentLength(0),
