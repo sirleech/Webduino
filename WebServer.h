@@ -183,7 +183,7 @@ public:
                               bool tail_complete);
 
   // constructor for webserver object
-  WebServer(const char *urlPrefix = "", int port = 80);
+  WebServer(const char *urlPrefix = "", uint16_t port = 80);
 
   // start listening for connections
   void begin();
@@ -365,7 +365,7 @@ private:
  * IMPLEMENTATION
  ********************************************************************/
 
-WebServer::WebServer(const char *urlPrefix, int port) :
+WebServer::WebServer(const char *urlPrefix, uint16_t port) :
   m_server(port),
   m_client(),
   m_urlPrefix(urlPrefix),
@@ -509,10 +509,10 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
   // if the first character is a slash,  there's more after it.
   if (verb[0] == '/')
   {
-    unsigned char i;
+    uint8_t i;
     char *qm_loc;
-    unsigned int verb_len;
-    int qm_offset;
+    uint16_t verb_len;
+    uint8_t qm_offset;
     // Skip over the leading "/",  because it makes the code more
     // efficient and easier to understand.
     verb++;
@@ -539,7 +539,7 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
     {
       // Initialize with null bytes, so number of parts can be determined.
       char *url_path[WEBDUINO_URL_PATH_COMMAND_LENGTH] = {0};
-      int part = 0;
+      uint8_t part = 0;
 
       // URL path should be terminated with null byte.
       *(verb + verb_len) = 0;
