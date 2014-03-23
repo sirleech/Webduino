@@ -134,7 +134,7 @@ extern "C" unsigned long millis(void);
 
 // declare a static string
 #ifdef __AVR__
-#define P(name)   static const unsigned char name[] PROGMEM
+#define P(name)   static const unsigned char name[] __attribute__(( section(".progmem." #name) ))
 #else
 #define P(name)   static const unsigned char name[]
 #endif
@@ -691,7 +691,7 @@ void WebServer::favicon(ConnectionType type)
 
 void WebServer::httpUnauthorized()
 {
-  P(failMsg) =
+  P(unauthMsg) =
     "HTTP/1.0 401 Authorization Required" CRLF
     WEBDUINO_SERVER_HEADER
     "Content-Type: text/html" CRLF
@@ -699,19 +699,19 @@ void WebServer::httpUnauthorized()
     CRLF
     WEBDUINO_AUTH_MESSAGE;
 
-  printP(failMsg);
+  printP(unauthMsg);
 }
 
 void WebServer::httpServerError()
 {
-  P(failMsg) =
+  P(servErrMsg) =
     "HTTP/1.0 500 Internal Server Error" CRLF
     WEBDUINO_SERVER_HEADER
     "Content-Type: text/html" CRLF
     CRLF
     WEBDUINO_SERVER_ERROR_MESSAGE;
 
-  printP(failMsg);
+  printP(servErrMsg);
 }
 
 void WebServer::httpNoContent()
