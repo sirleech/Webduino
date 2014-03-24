@@ -40,12 +40,6 @@
 #define WEBDUINO_VERSION 1007
 #define WEBDUINO_VERSION_STRING "1.7"
 
-#if WEBDUINO_SUPRESS_SERVER_HEADER
-#define WEBDUINO_SERVER_HEADER ""
-#else
-#define WEBDUINO_SERVER_HEADER "Server: Webduino/" WEBDUINO_VERSION_STRING CRLF
-#endif
-
 // standard END-OF-LINE marker in HTTP
 #define CRLF "\r\n"
 
@@ -134,7 +128,7 @@ extern "C" unsigned long millis(void);
 
 // declare a static string
 #ifdef __AVR__
-#define P(name)   static const unsigned char name[] PROGMEM
+#define P(name)   static const unsigned char name[] __attribute__(( section(".progmem." #name) ))
 #else
 #define P(name)   static const unsigned char name[]
 #endif
@@ -183,7 +177,7 @@ public:
                               bool tail_complete);
 
   // constructor for webserver object
-  WebServer(const char *urlPrefix = "", int port = 80);
+  WebServer(const char *urlPrefix = "", uint16_t port = 80);
 
   // start listening for connections
   void begin();
@@ -365,7 +359,7 @@ private:
  * IMPLEMENTATION
  ********************************************************************/
 
-WebServer::WebServer(const char *urlPrefix, int port) :
+WebServer::WebServer(const char *urlPrefix, uint16_t port) :
   m_server(port),
   m_client(),
   m_urlPrefix(urlPrefix),
@@ -378,6 +372,8 @@ WebServer::WebServer(const char *urlPrefix, int port) :
   m_bufFill(0)
 {
 }
+
+P(webServerHeader) = "Server: Webduino/" WEBDUINO_VERSION_STRING CRLF;
 
 void WebServer::begin()
 {
@@ -509,10 +505,10 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
   // if the first character is a slash,  there's more after it.
   if (verb[0] == '/')
   {
-    unsigned char i;
+    uint8_t i;
     char *qm_loc;
-    unsigned int verb_len;
-    int qm_offset;
+    uint16_t verb_len;
+    uint8_t qm_offset;
     // Skip over the leading "/",  because it makes the code more
     // efficient and easier to understand.
     verb++;
@@ -539,7 +535,7 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
     {
       // Initialize with null bytes, so number of parts can be determined.
       char *url_path[WEBDUINO_URL_PATH_COMMAND_LENGTH] = {0};
-      int part = 0;
+      uint8_t part = 0;
 
       // URL path should be terminated with null byte.
       *(verb + verb_len) = 0;
@@ -651,14 +647,19 @@ bool WebServer::checkCredentials(const char authCredentials[45])
 
 void WebServer::httpFail()
 {
-  P(failMsg) =
-    "HTTP/1.0 400 Bad Request" CRLF
-    WEBDUINO_SERVER_HEADER
+  P(failMsg1) = "HTTP/1.0 400 Bad Request" CRLF;
+  printP(failMsg1);
+
+#ifndef WEBDUINO_SUPRESS_SERVER_HEADER
+  printP(webServerHeader);
+#endif
+
+  P(failMsg2) = 
     "Content-Type: text/html" CRLF
     CRLF
     WEBDUINO_FAIL_MESSAGE;
 
-  printP(failMsg);
+  printP(failMsg2);
 }
 
 void WebServer::defaultFailCmd(WebServer &server,
@@ -691,50 +692,70 @@ void WebServer::favicon(ConnectionType type)
 
 void WebServer::httpUnauthorized()
 {
-  P(failMsg) =
-    "HTTP/1.0 401 Authorization Required" CRLF
-    WEBDUINO_SERVER_HEADER
+  P(unauthMsg1) = "HTTP/1.0 401 Authorization Required" CRLF;
+  printP(unauthMsg1);
+
+#ifndef WEBDUINO_SUPRESS_SERVER_HEADER
+  printP(webServerHeader);
+#endif
+
+  P(unauthMsg2) = 
     "Content-Type: text/html" CRLF
     "WWW-Authenticate: Basic realm=\"" WEBDUINO_AUTH_REALM "\"" CRLF
     CRLF
     WEBDUINO_AUTH_MESSAGE;
 
-  printP(failMsg);
+  printP(unauthMsg2);
 }
 
 void WebServer::httpServerError()
 {
-  P(failMsg) =
-    "HTTP/1.0 500 Internal Server Error" CRLF
-    WEBDUINO_SERVER_HEADER
+  P(servErrMsg1) = "HTTP/1.0 500 Internal Server Error" CRLF;
+  printP(servErrMsg1);
+
+#ifndef WEBDUINO_SUPRESS_SERVER_HEADER
+  printP(webServerHeader);
+#endif
+
+  P(servErrMsg2) = 
     "Content-Type: text/html" CRLF
     CRLF
     WEBDUINO_SERVER_ERROR_MESSAGE;
 
-  printP(failMsg);
+  printP(servErrMsg2);
 }
 
 void WebServer::httpNoContent()
 {
-  P(noContentMsg) =
-    "HTTP/1.0 204 NO CONTENT" CRLF
-    WEBDUINO_SERVER_HEADER
+  P(noContentMsg1) = "HTTP/1.0 204 NO CONTENT" CRLF;
+  printP(noContentMsg1);
+
+#ifndef WEBDUINO_SUPRESS_SERVER_HEADER
+  printP(webServerHeader);
+#endif
+
+  P(noContentMsg2) = 
     CRLF
     CRLF;
 
-  printP(noContentMsg);
+  printP(noContentMsg2);
 }
 
 void WebServer::httpSuccess(const char *contentType,
                             const char *extraHeaders)
 {
-  P(successMsg1) =
-    "HTTP/1.0 200 OK" CRLF
-    WEBDUINO_SERVER_HEADER
+  P(successMsg1) = "HTTP/1.0 200 OK" CRLF;
+  printP(successMsg1);
+
+#ifndef WEBDUINO_SUPRESS_SERVER_HEADER
+  printP(webServerHeader);
+#endif
+
+  P(successMsg2) = 
     "Access-Control-Allow-Origin: *" CRLF
     "Content-Type: ";
 
-  printP(successMsg1);
+  printP(successMsg2);
   print(contentType);
   printCRLF();
   if (extraHeaders)
@@ -744,12 +765,15 @@ void WebServer::httpSuccess(const char *contentType,
 
 void WebServer::httpSeeOther(const char *otherURL)
 {
-  P(seeOtherMsg) =
-    "HTTP/1.0 303 See Other" CRLF
-    WEBDUINO_SERVER_HEADER
-    "Location: ";
+  P(seeOtherMsg1) = "HTTP/1.0 303 See Other" CRLF;
+  printP(seeOtherMsg1);
 
-  printP(seeOtherMsg);
+#ifndef WEBDUINO_SUPRESS_SERVER_HEADER
+  printP(webServerHeader);
+#endif
+
+  P(seeOtherMsg2) = "Location: ";
+  printP(seeOtherMsg2);
   print(otherURL);
   printCRLF();
   printCRLF();
