@@ -53,6 +53,10 @@
 #define WEBDUINO_READ_TIMEOUT_IN_MS 1000
 #endif
 
+#ifndef WEBDUINO_COMMANDS_COUNT
+#define WEBDUINO_COMMANDS_COUNT 8
+#endif
+
 #ifndef WEBDUINO_URL_PATH_COMMAND_LENGTH
 #define WEBDUINO_URL_PATH_COMMAND_LENGTH 8
 #endif
@@ -329,7 +333,7 @@ private:
   {
     const char *verb;
     Command *cmd;
-  } m_commands[8];
+  } m_commands[WEBDUINO_COMMANDS_COUNT];
   unsigned char m_cmdCount;
   UrlPathCommand *m_urlPathCmd;
 
