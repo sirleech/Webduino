@@ -10,7 +10,7 @@
  * WEBDUINO_AUTH_REALM before including WebServer.h */
 #define WEBDUINO_AUTH_REALM "Weduino Authentication Example"
 
-#include "WebServer.h"
+#include "WebServer/WebServer.h"
 
 /* This creates an instance of the webserver.  By specifying a prefix
  * of "", all pages will be at the root of the server. */

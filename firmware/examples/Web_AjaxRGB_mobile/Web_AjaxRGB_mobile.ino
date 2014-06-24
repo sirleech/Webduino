@@ -1,7 +1,7 @@
 /* Web_AjaxRGB_mobile.pde - example sketch for Webduino library */
 /* -  offers web-based slider controllers for RGB led  - */
 
-#include "WebServer.h"
+#include "WebServer/WebServer.h"
 
 /* all URLs on this server will start with /rgb because of how we
  * define the PREFIX value.  We also will listen on port 80, the

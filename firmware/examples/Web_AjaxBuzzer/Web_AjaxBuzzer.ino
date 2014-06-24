@@ -1,6 +1,6 @@
 /* Web_Buzzer.pde - example sketch for Webduino library */
 
-#include "WebServer.h"
+#include "WebServer/WebServer.h"
 
 /* all URLs on this server will start with /buzz because of how we
  * define the PREFIX value.  We also will listen on port 80, the

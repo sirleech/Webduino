@@ -30,8 +30,7 @@
 
 
 #define WEBDUINO_FAIL_MESSAGE "<h1>Request Failed</h1>"
-#include "avr/pgmspace.h" // new include
-#include "WebServer.h"
+#include "WebServer/WebServer.h"
 
 #define VERSION_STRING "0.1"
 

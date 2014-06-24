@@ -1,6 +1,6 @@
 /* Web_HelloWorld.pde - very simple Webduino example */
 
-#include "WebServer.h"
+#include "WebServer/WebServer.h"
 
 /* This creates an instance of the webserver.  By specifying a prefix
  * of "", all pages will be at the root of the server. */

@@ -21,7 +21,7 @@
  * 
  */
 
-#include "WebServer.h"
+#include "WebServer/WebServer.h"
 
 // no-cost stream operator as described at 
 // http://sundial.org/arduino/?page_id=119
