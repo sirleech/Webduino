@@ -1,0 +1,7 @@
+{
+    "name": "WebServer",
+    "version": "0.0.1",
+    "author": "mdma https://community.spark.io/t/webduino-webserver-library-ported/5306",
+    "license": "MIT",
+    "description": "A lightweight webserver for the spark."
+}

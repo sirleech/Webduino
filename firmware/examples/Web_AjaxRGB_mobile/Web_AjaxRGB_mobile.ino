@@ -1,14 +1,7 @@
-/* Web_AjaxRGB.pde - example sketch for Webduino library */
+/* Web_AjaxRGB_mobile.pde - example sketch for Webduino library */
+/* -  offers web-based slider controllers for RGB led  - */
 
-#include "SPI.h"
-#include "Ethernet.h"
 #include "WebServer.h"
-
-// CHANGE THIS TO YOUR OWN UNIQUE VALUE
-static uint8_t mac[6] = { 0x02, 0xAA, 0xBB, 0xCC, 0x00, 0x22 };
-
-// CHANGE THIS TO MATCH YOUR HOST NETWORK
-static uint8_t ip[4] = { 192, 168, 1, 210 }; // area 51!
 
 /* all URLs on this server will start with /rgb because of how we
  * define the PREFIX value.  We also will listen on port 80, the
@@ -80,28 +73,25 @@ void rgbCmd(WebServer &server, WebServer::ConnectionType type, char *, bool)
     /* store the HTML in program memory using the P macro */
     P(message) = 
 "<!DOCTYPE html><html><head>"
-  "<title>Webduino AJAX RGB Example</title>"
-  "<link href='http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/themes/base/jquery-ui.css' rel=stylesheet />"
-  "<script src='http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js'></script>"
-  "<script src='http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js'></script>"
-  "<style> body { background: black; } #red, #green, #blue { margin: 10px; } #red { background: #f00; } #green { background: #0f0; } #blue { background: #00f; } </style>"
+  "<meta charset=\"utf-8\"><meta name=\"apple-mobile-web-app-capable\" content=\"yes\" /><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge,chrome=1\"><meta name=\"viewport\" content=\"width=device-width, user-scalable=no\">"
+  "<title>Webduino RGB</title>"
+  "<link rel=\"stylesheet\" href=\"http://code.jquery.com/mobile/1.0/jquery.mobile-1.0.min.css\" />"
+  "<script src=\"http://code.jquery.com/jquery-1.6.4.min.js\"></script>"
+  "<script src=\"http://code.jquery.com/mobile/1.0/jquery.mobile-1.0.min.js\"></script>"
+  "<style> body, .ui-page { background: black; } .ui-body { padding-bottom: 1.5em; } div.ui-slider { width: 88%; } #red, #green, #blue { display: block; margin: 10px; } #red { background: #f00; } #green { background: #0f0; } #blue { background: #00f; } </style>"
   "<script>"
-
-// change color on mouse up, not while sliding (causes much less traffic to the Arduino):
-//    "function changeRGB(event, ui) { var id = $(this).attr('id'); if (id == 'red') $.post('/rgb', { red: ui.value } ); if (id == 'green') $.post('/rgb', { green: ui.value } ); if (id == 'blue') $.post('/rgb', { blue: ui.value } ); } "
-//    "$(document).ready(function(){ $('#red, #green, #blue').slider({min: 0, max:255, change:changeRGB}); });"
-
-// change color on slide and mouse up (causes more traffic to the Arduino):
-    "function changeRGB(event, ui) { jQuery.ajaxSetup({timeout: 110}); /*not to DDoS the Arduino, you might have to change this to some threshold value that fits your setup*/ var id = $(this).attr('id'); if (id == 'red') $.post('/rgb', { red: ui.value } ); if (id == 'green') $.post('/rgb', { green: ui.value } ); if (id == 'blue') $.post('/rgb', { blue: ui.value } ); } "
-    "$(document).ready(function(){ $('#red, #green, #blue').slider({min: 0, max:255, change:changeRGB, slide:changeRGB}); });"
-
+// causes the Arduino to hang quite frequently (more often than Web_AjaxRGB.pde), probably due to the different event triggering the ajax requests
+    "$(document).ready(function(){ $('#red, #green, #blue').slider; $('#red, #green, #blue').bind( 'change', function(event, ui) { jQuery.ajaxSetup({timeout: 110}); /*not to DDoS the Arduino, you might have to change this to some threshold value that fits your setup*/ var id = $(this).attr('id'); var strength = $(this).val(); if (id == 'red') $.post('/rgb', { red: strength } ); if (id == 'green') $.post('/rgb', { green: strength } ); if (id == 'blue') $.post('/rgb', { blue: strength } ); });});"
   "</script>"
 "</head>"
-"<body style='font-size:62.5%;'>"
-  "<div id=red></div>"
-  "<div id=green></div>"
-  "<div id=blue></div>"
-"</body>"
+"<body>"
+  "<div data-role=\"header\" data-position=\"inline\"><h1>Webduino RGB</h1></div>"
+    "<div class=\"ui-body ui-body-a\">"
+      "<input type=\"range\" name=\"slider\" id=\"red\" value=\"0\" min=\"0\" max=\"255\"  />"
+      "<input type=\"range\" name=\"slider\" id=\"green\" value=\"0\" min=\"0\" max=\"255\"  />"
+      "<input type=\"range\" name=\"slider\" id=\"blue\" value=\"0\" min=\"0\" max=\"255\"  />"
+    "</div>"
+  "</body>"
 "</html>";
 
     server.printP(message);
@@ -115,9 +105,6 @@ void setup()
   pinMode(BLUE_PIN, OUTPUT);
 
 //  Serial.begin(9600);
-
-  // setup the Ehternet library to talk to the Wiznet board
-  Ethernet.begin(mac, ip);
 
   /* register our default command (activated with the request of
    * http://x.x.x.x/rgb */
