@@ -2,7 +2,7 @@
 
    Webduino, a simple Arduino web server
    Copyright 2009-2014 Ben Combee, Ran Talbott, Christopher Lee, Martin Lormes
-   Francisco M Cuenca-Acuna
+   Francisco M Cuenca-Acuna, Matthew McGowan
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -26,17 +26,30 @@
 #ifndef WEBDUINO_H_
 #define WEBDUINO_H_
 
+#define SPARK_CORE
+
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
+#ifndef SPARK_CORE
 #include <Ethernet.h>
 #include <EthernetClient.h>
 #include <EthernetServer.h>
+#else
+
+#define pgm_read_byte(x) (*((uint8_t*)x))
+
+#endif
+
+// TODO - this is necessary to avoid sockets being unexpectedly closed.
+// https://community.spark.io/t/unwanted-but-reproducable-disconnect-in-tcpclient/5265
+#define fixmedelay() delay(20)
 
 /********************************************************************
  * CONFIGURATION
  ********************************************************************/
-
+ 
 #define WEBDUINO_VERSION 1007
 #define WEBDUINO_VERSION_STRING "1.7"
 
@@ -124,6 +137,12 @@
 #define WEBDUINO_SERIAL_DEBUGGING 0
 #endif
 #if WEBDUINO_SERIAL_DEBUGGING
+	#define SERIAL_DUMP(buf, len) Serial.write(buf, len);
+#else
+	#define SERIAL_DUMP(buf, len)
+#endif
+
+#if WEBDUINO_SERIAL_DEBUGGING && !defined(SPARK_CORE)
 #include <HardwareSerial.h>
 #endif
 
@@ -202,6 +221,10 @@ public:
 
   // set command run for undefined pages
   void setFailureCommand(Command *cmd);
+
+  // call from non-failure command handlers when they find they cannot handle a request
+  void unhandledCommmand(ConnectionType requestType, char *verb, bool tail_complete);
+
 
   // add a new command to be run at the URL specified by verb
   void addCommand(const char *verb, Command *cmd);
@@ -316,8 +339,14 @@ public:
   // Close the current connection and flush ethernet buffers
   void reset(); 
 private:
+  
+#ifdef SPARK_CORE
+  TCPServer m_server;
+  TCPClient m_client;
+#else
   EthernetServer m_server;
   EthernetClient m_client;
+#endif  
   const char *m_urlPrefix;
 
   unsigned char m_pushback[32];
@@ -424,6 +453,8 @@ size_t WebServer::write(uint8_t ch)
 size_t WebServer::write(const uint8_t *buffer, size_t size)
 {
   flushBuf(); //Flush any buffered output
+  SERIAL_DUMP(buffer, size);
+  fixmedelay();
   return m_client.write(buffer, size);
 }
 
@@ -431,6 +462,8 @@ void WebServer::flushBuf()
 {
   if(m_bufFill > 0)
   {
+    SERIAL_DUMP(m_buffer, m_bufFill);
+    fixmedelay();    
     m_client.write(m_buffer, m_bufFill);
     m_bufFill = 0;
   }
@@ -439,21 +472,29 @@ void WebServer::flushBuf()
 void WebServer::writeP(const unsigned char *data, size_t length)
 {
   // copy data out of program memory into local storage
-
+#ifdef SPARK_CORE
+    fixmedelay();    
+   write(data, length);
+#else
   while (length--)
   {
     write(pgm_read_byte(data++));
   }
+#endif  
 }
 
 void WebServer::printP(const unsigned char *str)
 {
   // copy data out of program memory into local storage
-
+#ifdef SPARK_CORE
+    fixmedelay();
+    write((const uint8_t*)str, strlen((const char*)str));
+#else
   while (uint8_t value = pgm_read_byte(str++))
   {
     write(value);
   }
+#endif  
 }
 
 void WebServer::printCRLF()
@@ -552,7 +593,7 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
       // with a null byte).
       for (char * p = verb; p < verb + verb_len; p++)
       {
-        if (*p == '/')
+        if (*p == '/' && *(p+1))        // keep the last path component so we know it's a directory
         {
           *p = 0;
           url_path[part++] = p + 1;
@@ -567,6 +608,12 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
   }
   return false;
 }
+
+void WebServer::unhandledCommmand(ConnectionType requestType, char *verb,
+        bool tail_complete) {
+     m_failureCmd(*this, requestType, verb, tail_complete);
+}
+
 
 // processConnection with a default buffer
 void WebServer::processConnection()
@@ -603,7 +650,14 @@ void WebServer::processConnection(char *buff, int *bufflen)
     // - when there are illegal requests,
     // - when someone contacts it through telnet rather than proper HTTP,
     // - etc.
-    if (requestType != INVALID)
+    // Only try to dispatch command if request type and prefix are correct.
+    // Fix by quarencia.
+    if (requestType == INVALID ||
+        strncmp(buff, m_urlPrefix, urlPrefixLen) != 0)
+    {
+      m_failureCmd(*this, requestType, buff, (*bufflen) >= 0);
+    }
+    else
     {
       processHeaders();
 #if WEBDUINO_SERIAL_DEBUGGING > 1
@@ -618,20 +672,13 @@ void WebServer::processConnection(char *buff, int *bufflen)
       {
         favicon(requestType);
       }
-    }
-    // Only try to dispatch command if request type and prefix are correct.
-    // Fix by quarencia.
-    if (requestType == INVALID ||
-        strncmp(buff, m_urlPrefix, urlPrefixLen) != 0)
-    {
-      m_failureCmd(*this, requestType, buff, (*bufflen) >= 0);
-    }
-    else if (!dispatchCommand(requestType, buff + urlPrefixLen,
+      else if (!dispatchCommand(requestType, buff + urlPrefixLen,
              (*bufflen) >= 0))
-    {
-      m_failureCmd(*this, requestType, buff, (*bufflen) >= 0);
+      {
+        m_failureCmd(*this, requestType, buff, (*bufflen) >= 0);
+      }
     }
-
+    
     flushBuf();
 
 #if WEBDUINO_SERIAL_DEBUGGING > 1
@@ -686,7 +733,7 @@ void WebServer::noRobots(ConnectionType type)
 
 void WebServer::favicon(ConnectionType type)
 {
-  httpSuccess("image/x-icon","Cache-Control: max-age=31536000\r\n");
+  httpSuccess("image/x-icon","Cache-Control: max-age=31536000");
   if (type != HEAD)
   {
     P(faviconIco) = WEBDUINO_FAVICON_DATA;
@@ -754,17 +801,19 @@ void WebServer::httpSuccess(const char *contentType,
 #ifndef WEBDUINO_SUPRESS_SERVER_HEADER
   printP(webServerHeader);
 #endif
-
+  
   P(successMsg2) = 
     "Access-Control-Allow-Origin: *" CRLF
     "Content-Type: ";
 
-  printP(successMsg2);
+  printP(successMsg2); 
   print(contentType);
   printCRLF();
-  if (extraHeaders)
+  if (extraHeaders) {
     print(extraHeaders);
-  printCRLF();
+    printCRLF();    
+  }
+  printCRLF();   // blank line starts body
 }
 
 void WebServer::httpSeeOther(const char *otherURL)
@@ -992,7 +1041,7 @@ bool WebServer::readPOSTparam(char *name, int nameLen,
       int ch2 = read();
       if (ch1 == -1 || ch2 == -1)
         return false;
-      char hex[3] = { ch1, ch2, 0 };
+      char hex[3] = { ch1, ch2, '\x0' };
       ch = strtoul(hex, NULL, 16);
     }
 
