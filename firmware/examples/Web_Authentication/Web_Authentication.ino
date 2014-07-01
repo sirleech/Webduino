@@ -10,20 +10,7 @@
  * WEBDUINO_AUTH_REALM before including WebServer.h */
 #define WEBDUINO_AUTH_REALM "Weduino Authentication Example"
 
-#include "SPI.h"
-#include "Ethernet.h"
-#include "WebServer.h"
-
-/* CHANGE THIS TO YOUR OWN UNIQUE VALUE.  The MAC number should be
- * different from any other devices on your network or you'll have
- * problems receiving packets. */
-static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-
-/* CHANGE THIS TO MATCH YOUR HOST NETWORK.  Most home networks are in
- * the 192.168.0.XXX or 192.168.1.XXX subrange.  Pick an address
- * that's not in use and isn't going to be automatically allocated by
- * DHCP from your router. */
-static uint8_t ip[] = { 192, 168, 1, 210 };
+#include "WebServer/WebServer.h"
 
 /* This creates an instance of the webserver.  By specifying a prefix
  * of "", all pages will be at the root of the server. */
@@ -89,7 +76,6 @@ void privateCmd(WebServer &server, WebServer::ConnectionType type, char *, bool)
 
 void setup()
 {
-  Ethernet.begin(mac, ip);
   webserver.setDefaultCommand(&defaultCmd);
   webserver.addCommand("index.html", &defaultCmd);
   webserver.addCommand("private.html", &privateCmd);

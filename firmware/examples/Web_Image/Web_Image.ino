@@ -16,9 +16,7 @@
  * image request.
  */
 
-#include "SPI.h"
-#include "Ethernet.h"
-#include "WebServer.h"
+#include "WebServer/WebServer.h"
 
 // CHANGE THIS TO YOUR OWN UNIQUE VALUE
 static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
@@ -96,9 +94,6 @@ void imageCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 
 void setup()
 {
-  // setup the Ehternet library to talk to the Wiznet board
-  Ethernet.begin(mac, ip);
-
   /* register our default command (activated with the request of
    * http://x.x.x.x/ */
   webserver.setDefaultCommand(&defaultCmd);
