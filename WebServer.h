@@ -992,7 +992,7 @@ bool WebServer::readPOSTparam(char *name, int nameLen,
       int ch2 = read();
       if (ch1 == -1 || ch2 == -1)
         return false;
-      char hex[3] = { ch1, ch2, 0 };
+      char hex[3] = { (char)ch1, (char)ch2, '\0' };
       ch = strtoul(hex, NULL, 16);
     }
 
