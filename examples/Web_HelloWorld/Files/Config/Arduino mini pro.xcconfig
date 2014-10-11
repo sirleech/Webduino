@@ -1,0 +1,30 @@
+//
+//  Arduino mini pro.xcconfig
+//  Board configuration file
+//  ----------------------------------
+//  Developed with embedXcode
+//
+//  Project mpideXcode8
+//  Created by Rei VILO on 12/03/12
+//  Copyright © 2012 http://embeddedcomputing.weebly.com
+//  Licence CC = BY SA NC
+//
+
+
+// Board indentifier
+// see Boards.txt for <tag>.name=Arduino Uno (16 MHz)
+//
+BOARD_TAG  = pro5v328
+
+// Port (optionnal)
+// most common are /dev/tty.usbserial*, /dev/tty.usbmodem* or /dev/tty.uart*
+//
+BOARD_PORT = /dev/tty.usbmodem*
+
+// References for Xcode code-sense
+// see Boards.txt for <tag>.build.mcu=<GCC_PREPROCESSOR_DEFINITIONS>
+// specify ARDUINO_APP for Arduino, MPIDE_APP for Mpide, 
+//   WIRING_APP for Wiring, ENERGIA_APP for Energia, MAPLE_APP for MapleIDE
+//
+GCC_PREPROCESSOR_DEFINITIONS = __AVR_ATmega328P__
+HEADER_SEARCH_PATHS = $(ARDUINO_APP)/** $(SKETCHBOOK_DIR)/Libraries/**

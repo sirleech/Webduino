@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>202A1F59-5778-4C37-9AF2-557E177877A9</string>
+	<key>IDESourceControlProjectName</key>
+	<string>CrbRestServer</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>270F283C-933B-48DC-A96C-5F717345C0D9</key>
+		<string>ssh://github.com/corbinstreehouse/LEDDigitalCyrWheel.git</string>
+		<key>47E889BA-2CB9-4011-B59E-A4A581B918B9</key>
+		<string>ssh://github.com/corbinstreehouse/LEDDigitalCyrWheel.git</string>
+		<key>E5457178-2A5F-4807-A6F8-1C594917BB52</key>
+		<string>ssh://github.com/corbinstreehouse/Adafruit_CC3000_Library.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>CrbRestServer.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>270F283C-933B-48DC-A96C-5F717345C0D9</key>
+		<string>../..</string>
+		<key>47E889BA-2CB9-4011-B59E-A4A581B918B9</key>
+		<string>../../../CRBRestServer</string>
+		<key>E5457178-2A5F-4807-A6F8-1C594917BB52</key>
+		<string>../../../CRBRestServer/Libraries/Adafruit_CC3000_Library</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>ssh://github.com/corbinstreehouse/LEDDigitalCyrWheel.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>270F283C-933B-48DC-A96C-5F717345C0D9</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>E5457178-2A5F-4807-A6F8-1C594917BB52</string>
+			<key>IDESourceControlWCCName</key>
+			<string>Adafruit_CC3000_Library</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>270F283C-933B-48DC-A96C-5F717345C0D9</string>
+			<key>IDESourceControlWCCName</key>
+			<string>CrbRestServer</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>47E889BA-2CB9-4011-B59E-A4A581B918B9</string>
+			<key>IDESourceControlWCCName</key>
+			<string>CRBRestServer</string>
+		</dict>
+	</array>
+</dict>
+</plist>

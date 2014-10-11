@@ -1,0 +1,29 @@
+//
+//  Arduino Leonardo.xcconfig 
+//  Board config file
+//  ----------------------------------
+//  Developed with embedXcode
+//
+//  Project leonardo
+//  Created by rei-vilo on 29/08/12
+//  Copyright © 2012 http://embedxcode.weebly.com
+//  Licence CC = BY SA NC
+//
+
+// Board identifier
+// see Boards.txt for <tag>.name=Arduino Uno (16 MHz)
+//
+BOARD_TAG  = leonardo
+
+// Port (optionnal)
+// most common are /dev/tty.usbserial*, /dev/tty.usbmodem* or /dev/tty.uart*
+//
+BOARD_PORT = /dev/tty.usbmodem*
+
+// References for Xcode code-sense
+// see Boards.txt for <tag>.build.mcu=<GCC_PREPROCESSOR_DEFINITIONS>
+// specify ARDUINO_APP for Arduino, MPIDE_APP for Mpide, WIRING_APP for Wiring, ENERGIA_APP for Energia, MAPLE_APP for MapleIDE
+//
+GCC_PREPROCESSOR_DEFINITIONS = __AVR_ATmega32U4__
+HEADER_SEARCH_PATHS = $(ARDUINO_APP)/** $(SKETCHBOOK_DIR)/Libraries/**
+
