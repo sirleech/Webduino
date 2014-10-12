@@ -89,6 +89,15 @@ enum URLPARAM_RESULT { URLPARAM_OK,
     URLPARAM_EOS         // No params left
 };
 
+enum WSState {
+    WSStateBegin,
+    WSStateConnecting,
+    WSStateGettingDHCP,
+    WSStateBeginDNS,
+    WSStateReady,
+};
+
+
 class WebServer: public Print
 {
 public:
@@ -260,7 +269,10 @@ private:
     Adafruit_CC3000_Server m_server;
     Adafruit_CC3000_ClientRef m_client;
     MDNSResponder m_mdns;
+    WSState m_state;
 #endif
+    
+    void updateState();
     
     const char *m_urlPrefix;
     

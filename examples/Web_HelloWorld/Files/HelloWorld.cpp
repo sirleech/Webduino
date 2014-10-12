@@ -48,7 +48,7 @@ void helloCmd(WebServer &server, WebServer::ConnectionType type, char *, bool)
         /* this defines some HTML text in read-only memory aka PROGMEM.
          * This is needed to avoid having the string copied to our limited
          * amount of RAM. */
-        const char *helloMsg = "<html><body><h1>Hello, World!</h1></body></html>";
+        const char *helloMsg = "<html><body><h1>Hello, Costanza!</h1></body></html>";
 
         /* this is a special form of print that outputs from PROGMEM */
         server.print(helloMsg);

@@ -166,48 +166,81 @@ m_client(),
     m_defaultCmd(&defaultFailCmd),
     m_cmdCount(0),
     m_urlPathCmd(NULL),
-    m_bufFill(0)
+    m_bufFill(0),
+    m_state(WSStateBegin)
 {
 }
 
 P(webServerHeader) = "Server: Webduino/" WEBDUINO_VERSION_STRING CRLF;
 
+// TODO: timeouts...
+void WebServer::updateState() {
+    switch (m_state) {
+        case WSStateBegin: {
+            DEBUG_PRINTLN("cc3000 begin...");
+            if (m_cc3000.begin()) {
+                // Go to the next state and fall through
+                m_state = WSStateConnecting;
+                // Intentional fall through!!
+            } else {
+                // wait...
+                break;
+            }
+        }
+        case WSStateConnecting: {
+            DEBUG_PRINTLN("connecting to wifi network...");
+            // one retry attempt...
+//            if (m_cc3000.connectToAP(WLAN_SSID, WLAN_PASS, WLAN_SECURITY, 1))
+            if (m_cc3000.connectSecure(WLAN_SSID, WLAN_PASS, WLAN_SECURITY)) // gobs faster
+            {
+                DEBUG_PRINTLN("...connected");
+                m_state = WSStateGettingDHCP;
+                // Intentional fall through!!
+            } else {
+                break;
+            }
+        }
+        case WSStateGettingDHCP: {
+            DEBUG_PRINTLN("waiting for DHCP server...");
+            if (m_cc3000.checkDHCP()) {
+                DEBUG_PRINTLN("...DHCP done.");
+                m_state = WSStateBeginDNS;
+                // Intentional fall through!!
+            } else {
+                // Give it some time...
+                delay(100);
+                break;
+            }
+        }
+        case WSStateBeginDNS: {
+            DEBUG_PRINTLN("Begin DNS setup...");
+            if (m_mdns.begin(WLAN_MACHINE_NAME, m_cc3000)) {
+                DEBUG_PRINTLN("...DNS ready.");
+                // Now we can start the server
+                m_server.begin();
+                DEBUG_PRINTF("Server started at: %s. Waiting for connection\r\n", WLAN_MACHINE_NAME);
+                m_state = WSStateReady;
+                // NO fall through
+            }
+            break; // done!
+        }
+        case WSStateReady: {
+            // Make sure we are still connected; if not, start again...
+            if (!m_cc3000.checkConnected()) {
+                m_state = WSStateConnecting; // next loop will connect again
+            }
+            break;
+        }
+    }
+}
+
 void WebServer::begin()
 {
 #if USE_CC3000_LIBRARY
-    // TODO: move to a state machine so it isn't synchrnous/blocking
-    
-    // Set up CC3000 and get connected to the wireless network.
-    Serial.println("starting chip...");
-    if (!m_cc3000.begin()) {
-        while(1);
-    }
-    Serial.println("connecting to wifi network...");
-    if (!m_cc3000.connectToAP(WLAN_SSID, WLAN_PASS, WLAN_SECURITY)) {
-        while(1);
-    }
-    Serial.println("waitinf for DHCP server...");
-    while (!m_cc3000.checkDHCP())
-    {
-        delay(100);
-    }
-    Serial.println("Begin DNS setup...");
-    
-    // Print CC3000 IP address. Enable if mDNS doesn't work
-    //while (! displayConnectionDetails()) {
-    // delay(1000);
-    //}
-    
-    // Start multicast DNS responder
-    if (!m_mdns.begin(WLAN_MACHINE_NAME, m_cc3000)) {
-        while(1); 
-    }
-    
+    // See how many things we can move to at once...otherwise, we try on sequential loops
+    m_state = WSStateBegin;
+    updateState();
 #endif
-
-    m_server.begin();
-    
-    DEBUG_PRINTF("Server started at: %s. Waiting for connection\r\n", WLAN_MACHINE_NAME);
 }
 
 void WebServer::setDefaultCommand(Command *cmd)
@@ -240,7 +273,7 @@ size_t WebServer::write(uint8_t ch)
     
     if(m_bufFill == sizeof(m_buffer))
     {
-        for (int i = 0; i < m_bufFill; i++) Serial.printf("%c", m_buffer[i]); // corbin
+//        for (int i = 0; i < m_bufFill; i++) Serial.printf("%c", m_buffer[i]); // corbin
         m_client.write(m_buffer, m_bufFill);
         m_bufFill = 0;
     }
@@ -251,7 +284,7 @@ size_t WebServer::write(uint8_t ch)
 size_t WebServer::write(const uint8_t *buffer, size_t size)
 {
     flushBuf(); //Flush any buffered output
-    Serial.print((char*)buffer); // corbin
+//    Serial.print((char*)buffer); // corbin
     return m_client.write(buffer, size);
 }
 
@@ -259,7 +292,7 @@ void WebServer::flushBuf()
 {
     if(m_bufFill > 0)
     {
-        for (int i = 0; i < m_bufFill; i++) Serial.printf("%c", m_buffer[i]); // corbin
+//        for (int i = 0; i < m_bufFill; i++) Serial.printf("%c", m_buffer[i]); // corbin
         m_client.write(m_buffer, m_bufFill);
         m_bufFill = 0;
     }
@@ -410,17 +443,14 @@ void WebServer::processConnection(char *buff, int *bufflen)
 #endif
     
 #if USE_CC3000_LIBRARY
-    // TODO: corbin, introduce state machine here.....
-    if(!m_cc3000.checkConnected()){
-        while(1) {
-            DEBUG_PRINTLN("...re-connnecting");
-            delay(500);
-        }
-    }
-    
-    m_mdns.update();
-    m_client = m_server.available();
 
+    updateState();
+    if (m_state == WSStateReady) {
+        m_mdns.update();
+        m_client = m_server.available();
+    } else {
+        m_client = Adafruit_CC3000_ClientRef(NULL);
+    }
     
 #endif
     
@@ -712,7 +742,6 @@ void WebServer::push(int ch)
 
 void WebServer::reset()
 {
-    DEBUG_PRINTF("flush and then stop");
     m_pushbackDepth = 0;
     m_client.flush();
 #if USE_CC3000_LIBRARY
