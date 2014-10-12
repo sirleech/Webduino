@@ -21,6 +21,8 @@
 #include "HelloWorld.h"
 #include "Wire.h"
 #include <stdint.h>
+
+#define WEBDUINO_FAVICON_DATA ""
 #include "WebServer.h"
 
 
