@@ -179,10 +179,12 @@ void WebServer::updateState() {
         case WSStateBegin: {
             DEBUG_PRINTLN("cc3000 begin...");
             if (m_cc3000.begin()) {
+                DEBUG_PRINTLN("... cc3000 done begin...");
                 // Go to the next state and fall through
                 m_state = WSStateConnecting;
                 // Intentional fall through!!
             } else {
+                DEBUG_PRINTLN("... cc3000 init failed!!!...");
                 // wait...
                 break;
             }
@@ -195,6 +197,7 @@ void WebServer::updateState() {
             {
                 DEBUG_PRINTLN("...connected");
                 m_state = WSStateGettingDHCP;
+                delay(100); // give it a brief moment; note, instead of delays, I can keep timing in the state machine
                 // Intentional fall through!!
             } else {
                 break;
@@ -202,8 +205,18 @@ void WebServer::updateState() {
         }
         case WSStateGettingDHCP: {
             DEBUG_PRINTLN("waiting for DHCP server...");
+            if (!m_cc3000.checkConnected()) {
+                DEBUG_PRINTLN("?? Disconnectd? try connecting again in a brief moment");
+                delay(100);
+                m_state = WSStateConnecting; // next loop will connect again
+                break;
+            }
             if (m_cc3000.checkDHCP()) {
                 DEBUG_PRINTLN("...DHCP done.");
+                uint32_t ipAddress, netmask, gateway, dhcpserv, dnsserv;
+                if(m_cc3000.getIPAddress(&ipAddress, &netmask, &gateway, &dhcpserv, &dnsserv))
+                    Serial.print(F("\nIP Addr: ")); m_cc3000.printIPdotsRev(ipAddress);
+                
                 m_state = WSStateBeginDNS;
                 // Intentional fall through!!
             } else {
@@ -221,6 +234,10 @@ void WebServer::updateState() {
                 DEBUG_PRINTF("Server started at: %s. Waiting for connection\r\n", WLAN_MACHINE_NAME);
                 m_state = WSStateReady;
                 // NO fall through
+            } else {
+//                uint32_t ipAddress, netmask, gateway, dhcpserv, dnsserv;
+//                if(m_cc3000.getIPAddress(&ipAddress, &netmask, &gateway, &dhcpserv, &dnsserv))
+//                    Serial.print(F("\nIP Addr: ")); m_cc3000.printIPdotsRev(ipAddress);
             }
             break; // done!
         }
