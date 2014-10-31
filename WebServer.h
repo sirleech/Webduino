@@ -58,13 +58,6 @@
 #define ADAFRUIT_CC3000_VBAT  6
 #define ADAFRUIT_CC3000_CS    7
 
-// Your WiFi SSID and password
-#define WLAN_MACHINE_NAME       "CyrWheel"
-#define WLAN_SSID       "MonkeyPlayground"
-#define WLAN_PASS       "unicycle"
-#define WLAN_SECURITY   WLAN_SEC_WPA2
-
-
 #else
  No implementation
 #endif
@@ -88,15 +81,6 @@ enum URLPARAM_RESULT { URLPARAM_OK,
     URLPARAM_BOTH_OFLO,
     URLPARAM_EOS         // No params left
 };
-
-enum WSState {
-    WSStateBegin,
-    WSStateConnecting,
-    WSStateGettingDHCP,
-    WSStateBeginDNS,
-    WSStateReady,
-};
-
 
 class WebServer: public Print
 {
@@ -124,6 +108,7 @@ public:
     WebServer(const char *urlPrefix = "", uint16_t port = 80);
     
     // start listening for connections
+    // NOTE: w/ the Wifi connection this doesn't start until wifi is connected
     void begin();
     
     // check for an incoming connection, and if it exists, process it
@@ -257,22 +242,30 @@ public:
     
     // Close the current connection and flush ethernet buffers
     void reset();
+
+    
+#if USE_CC3000_LIBRARY
+    Adafruit_CC3000 *getWifiManager(); // Allows setup of the network or direct access
+#endif
+    
 private:
 #if USE_ETHERNET_LIBRARY
     EthernetServer m_server;
     EthernetClient m_client;
 #endif
 #if USE_CC3000_LIBRARY
-    // Create CC3000 instance
+    // TODO: should I make it take an instance and have it be managed seperately? Might be better if someone wants more than a webserver
+    
     Adafruit_CC3000 m_cc3000; // = Adafruit_CC3000(ADAFRUIT_CC3000_CS, ADAFRUIT_CC3000_IRQ, ADAFRUIT_CC3000_VBAT, SPI_CLOCK_DIV2);
     
     Adafruit_CC3000_Server m_server;
     Adafruit_CC3000_ClientRef m_client;
     MDNSResponder m_mdns;
-    WSState m_state;
+    bool m_didBegin;
 #endif
     
-    void updateState();
+    // Call on each loop
+    void process();
     
     const char *m_urlPrefix;
     

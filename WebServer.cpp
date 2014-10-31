@@ -166,97 +166,33 @@ m_client(),
     m_defaultCmd(&defaultFailCmd),
     m_cmdCount(0),
     m_urlPathCmd(NULL),
-    m_bufFill(0),
-    m_state(WSStateBegin)
+    m_bufFill(0)
 {
+    
 }
 
-P(webServerHeader) = "Server: Webduino/" WEBDUINO_VERSION_STRING CRLF;
+P(webServerHeader) = "Server: CyrServer/" WEBDUINO_VERSION_STRING CRLF;
 
-// TODO: timeouts...
-void WebServer::updateState() {
-    switch (m_state) {
-        case WSStateBegin: {
-            DEBUG_PRINTLN("cc3000 begin...");
-            if (m_cc3000.begin()) {
-                DEBUG_PRINTLN("... cc3000 done begin...");
-                // Go to the next state and fall through
-                m_state = WSStateConnecting;
-                // Intentional fall through!!
-            } else {
-                DEBUG_PRINTLN("... cc3000 init failed!!!...");
-                // wait...
-                break;
-            }
-        }
-        case WSStateConnecting: {
-            DEBUG_PRINTLN("connecting to wifi network...");
-            // one retry attempt...
-//            if (m_cc3000.connectToAP(WLAN_SSID, WLAN_PASS, WLAN_SECURITY, 1))
-            if (m_cc3000.connectSecure(WLAN_SSID, WLAN_PASS, WLAN_SECURITY)) // gobs faster
-            {
-                DEBUG_PRINTLN("...connected");
-                m_state = WSStateGettingDHCP;
-                delay(100); // give it a brief moment; note, instead of delays, I can keep timing in the state machine
-                // Intentional fall through!!
-            } else {
-                break;
-            }
-        }
-        case WSStateGettingDHCP: {
-            DEBUG_PRINTLN("waiting for DHCP server...");
-            if (!m_cc3000.checkConnected()) {
-                DEBUG_PRINTLN("?? Disconnectd? try connecting again in a brief moment");
-                delay(100);
-                m_state = WSStateConnecting; // next loop will connect again
-                break;
-            }
-            if (m_cc3000.checkDHCP()) {
-                DEBUG_PRINTLN("...DHCP done.");
-                uint32_t ipAddress, netmask, gateway, dhcpserv, dnsserv;
-                if(m_cc3000.getIPAddress(&ipAddress, &netmask, &gateway, &dhcpserv, &dnsserv))
-                    Serial.print(F("\nIP Addr: ")); m_cc3000.printIPdotsRev(ipAddress);
-                
-                m_state = WSStateBeginDNS;
-                // Intentional fall through!!
-            } else {
-                // Give it some time...
-                delay(100);
-                break;
-            }
-        }
-        case WSStateBeginDNS: {
-            DEBUG_PRINTLN("Begin DNS setup...");
-            if (m_mdns.begin(WLAN_MACHINE_NAME, m_cc3000)) {
-                DEBUG_PRINTLN("...DNS ready.");
-                // Now we can start the server
-                m_server.begin();
-                DEBUG_PRINTF("Server started at: %s. Waiting for connection\r\n", WLAN_MACHINE_NAME);
-                m_state = WSStateReady;
-                // NO fall through
-            } else {
-//                uint32_t ipAddress, netmask, gateway, dhcpserv, dnsserv;
-//                if(m_cc3000.getIPAddress(&ipAddress, &netmask, &gateway, &dhcpserv, &dnsserv))
-//                    Serial.print(F("\nIP Addr: ")); m_cc3000.printIPdotsRev(ipAddress);
-            }
-            break; // done!
-        }
-        case WSStateReady: {
-            // Make sure we are still connected; if not, start again...
-            if (!m_cc3000.checkConnected()) {
-                m_state = WSStateConnecting; // next loop will connect again
-            }
-            break;
-        }
-    }
+Adafruit_CC3000 *WebServer::getWifiManager() {
+    return &m_cc3000;
 }
 
 void WebServer::begin()
 {
 #if USE_CC3000_LIBRARY
     // See how many things we can move to at once...otherwise, we try on sequential loops
-    m_state = WSStateBegin;
-    updateState();
+    if (!m_didBegin) {
+        m_cc3000.process();
+        if (m_cc3000.isReady()) {
+            m_server.begin();
+            m_didBegin = true;
+        } else {
+            // we wait till it is ready
+        }
+    }
+#else
+    m_didBegin = true;
+    m_server.begin();
 #endif
 }
 
@@ -461,12 +397,16 @@ void WebServer::processConnection(char *buff, int *bufflen)
     
 #if USE_CC3000_LIBRARY
 
-    updateState();
-    if (m_state == WSStateReady) {
-        m_mdns.update();
+    m_cc3000.process();
+    if (m_cc3000.isReady()) {
+        if (!m_didBegin) {
+            m_didBegin = true;
+            m_server.begin();
+        }
         m_client = m_server.available();
     } else {
-        m_client = Adafruit_CC3000_ClientRef(NULL);
+        m_client = NULL; // = Adafruit_CC3000_ClientRef(NULL); ?
+        m_didBegin = false; // make sure we do a begin (again potentially)
     }
     
 #endif
