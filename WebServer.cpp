@@ -46,6 +46,11 @@
     #define DEBUG_PRINTF(a, ...)
 #endif
 
+#define ASSERT(a) if (!(a)) { \
+    Serial.print("ASSERT ");  \
+    Serial.print(__FILE__); Serial.print(" : "); \
+    Serial.println(__LINE__); }
+
 
 /********************************************************************
  * CONFIGURATION
@@ -211,7 +216,11 @@ void WebServer::addCommand(const char *verb, Command *cmd)
     if (m_cmdCount < SIZE(m_commands))
     {
         m_commands[m_cmdCount].verb = verb;
-        m_commands[m_cmdCount++].cmd = cmd;
+        m_commands[m_cmdCount].cmd = cmd;
+        m_cmdCount++;
+    } else {
+        ASSERT(false);
+        delay(2000);
     }
 }
 
@@ -336,17 +345,25 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
         qm_offset = (qm_loc == NULL) ? 0 : 1;
         for (i = 0; i < m_cmdCount; ++i)
         {
-            if ((verb_len == strlen(m_commands[i].verb))
-                && (strncmp(verb, m_commands[i].verb, verb_len) == 0))
+            // NOTE: corbin: wanted to match the prefix....this is a little loose
+            uint16_t commandVerbLen = strlen(m_commands[i].verb);
+            if ((verb_len >= commandVerbLen)
+                && (strncmp(verb, m_commands[i].verb, commandVerbLen) == 0))
             {
                 // Skip over the "verb" part of the URL (and the question
                 // mark, if present) when passing it to the "action" routine
+                
+                
+                if (verb[commandVerbLen] == '/') {
+                    verb++;
+                }
                 m_commands[i].cmd(*this, requestType,
-                                  verb + verb_len + qm_offset,
+                                  verb + commandVerbLen + qm_offset,
                                   tail_complete);
                 return true;
             }
         }
+        
         // Check if UrlPathCommand is assigned.
         if (m_urlPathCmd != NULL)
         {
