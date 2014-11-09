@@ -70,6 +70,10 @@
 #define WEBDUINO_OUTPUT_BUFFER_SIZE 32
 #endif
 
+// requires a buffer for the content type
+#ifndef WEBDUINO_SUPPORT_CONTENT_TYPE
+#define WEBDUINO_SUPPORT_CONTENT_TYPE 1
+#endif
 
 /* Return codes from nextURLparam.  NOTE: URLPARAM_EOS is returned
  * when you call nextURLparam AFTER the last parameter is read.  The
@@ -96,7 +100,7 @@ public:
     //          part of it was lost because the buffer was too small.
     typedef void Command(WebServer &server, ConnectionType type,
                          char *url_tail, bool tail_complete);
-    
+
     // Prototype for the optional function which consumes the URL path itself.
     // url_path contains pointers to the seperate parts of the URL path where '/'
     //          was used as the delimiter.
@@ -199,6 +203,14 @@ public:
     URLPARAM_RESULT nextURLparam(char **tail, char *name, int nameLen,
                                  char *value, int valueLen);
     
+    
+    typedef void ContentTypeHandler(WebServer &server, char *contentType, char *name, char *filename);
+
+    char *getContentType(); // Returns the Content-Type: result, if available, else NULL
+    bool skipToNextMultipartBoundaryStart();
+    bool readMultipartFormDataName(char *name, int nameLength, char *filename = NULL, int filenameLength = 0);
+    bool readMultipartFormDataContent(char *buffer, int bufferLen, int &amountRead); // returns true when done!!
+
     // compare string against credentials in current request
     //
     // authCredentials must be Base64 encoded outside of Webduino
@@ -206,6 +218,7 @@ public:
     //
     // returns true if strings match, false otherwise
     bool checkCredentials(const char authCredentials[45]);
+    
     
     // output headers and a message indicating a server error
     void httpFail();
@@ -242,7 +255,6 @@ public:
     
     // Close the current connection and flush ethernet buffers
     void reset();
-
     
 #if USE_CC3000_LIBRARY
     Adafruit_CC3000 *getWifiManager(); // Allows setup of the network or direct access
@@ -263,6 +275,7 @@ private:
     MDNSResponder m_mdns;
     bool m_didBegin;
 #endif
+    
     
     // Call on each loop
     void process();
@@ -288,6 +301,14 @@ private:
     
     uint8_t m_buffer[WEBDUINO_OUTPUT_BUFFER_SIZE];
     uint8_t m_bufFill;
+    
+#if WEBDUINO_SUPPORT_CONTENT_TYPE
+#define WEBDUINO_CONTENT_TYPE_BUFFER_SIZE 32 // rather abitrary; must be big enough to store the content-type NAME you expect and boundary length (ie: multipart/form-data, but not the actual data)
+    char m_contentType[WEBDUINO_CONTENT_TYPE_BUFFER_SIZE];
+    char m_contentBoundary[WEBDUINO_CONTENT_TYPE_BUFFER_SIZE];
+    void readContentType(bool includeBoundary);
+    bool readMultipartFormDataParameters(char *name, int nameLen, char *value, int valueLen);
+#endif
     
     void getRequest(WebServer::ConnectionType &type, char *request, int *length);
     bool dispatchCommand(ConnectionType requestType, char *verb,

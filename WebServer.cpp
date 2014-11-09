@@ -33,7 +33,7 @@
 // before including WebServer.h to have incoming requests logged to
 // the serial port.
 #ifndef WEBDUINO_SERIAL_DEBUGGING
-    #define WEBDUINO_SERIAL_DEBUGGING 1
+    #define WEBDUINO_SERIAL_DEBUGGING 2
 #endif
 
 
@@ -61,6 +61,8 @@
 
 // standard END-OF-LINE marker in HTTP
 #define CRLF "\r\n"
+#define CR '\r'
+#define LF '\n'
 
 // If processConnection is called without a buffer, it allocates one
 // of 32 bytes
@@ -664,10 +666,10 @@ int WebServer::read()
                 // count character against content-length
                 if (m_readingContent)
                 {
-                    --m_contentLength;
+                    m_contentLength--;
                 }
                 
-#if WEBDUINO_SERIAL_DEBUGGING
+#if 0 // WEBDUINO_SERIAL_DEBUGGING
                 if (ch == '\r')
                     Serial.print("<CR>");
                 else if (ch == '\n')
@@ -801,6 +803,9 @@ void WebServer::readHeader(char *value, int valueLen)
     push(ch);
 }
 
+
+//bool WebServer::readNextMultipart(char *)
+
 bool WebServer::readPOSTparam(char *name, int nameLen,
                               char *value, int valueLen)
 {
@@ -874,6 +879,131 @@ bool WebServer::readPOSTparam(char *name, int nameLen,
         // are no more parameters
         return false;
     }
+}
+
+
+// http://www.w3.org/Protocols/rfc1341/4_Content-Type.html
+// Call this *after* parsing: Content-Type := type "/" subtype
+// Including any ; (ignored as deliminators)
+bool WebServer::readMultipartFormDataParameters(char *name, int nameLen, char *value, int valueLen) {
+    memset(name, 0, nameLen);
+    nameLen--; // save a spot for NULL
+    memset(value, 0, valueLen);
+    valueLen--;
+
+    bool readingName = true; // else, reading the value
+    bool done = false;
+    bool quoted = false; // only true when reading the value
+    do {
+        char ch = read();
+//        Serial.print(ch); // corbin
+        if (quoted) {
+            // Read a quoted value; only values can be quoted.
+            switch (ch) {
+                case -1: {
+                    // connection done
+                    return false;
+                }
+                case '\r':
+                case '\n':
+                    // new line in the thing? not really allowed; push it back and stop
+                    push(ch);
+                    quoted = false;
+                    break;
+                    
+                case '"': {
+                    quoted = false;
+                    done = true;
+                    break;
+                }
+                default: {
+                    // Add to the value
+                    if (valueLen > 0) {
+                        *value = ch;
+                        value++;
+                        valueLen--;
+                    }
+                }
+            }
+        } else {
+            switch (ch) {
+                case -1: {
+                    return false;
+                }
+                case 0: {
+#if WEBDUINO_SERIAL_DEBUGGING > 1
+                    Serial.println("\n ****** unexpected NULL");
+#endif
+                    // not sure..
+                    return false;
+                }
+                case '\r':
+                case '\n':
+                    // Stop on the newline; push it back so we can read two in a row
+                    push(ch);
+                    if (!readingName) {
+                        return true; // success
+                    } else {
+                        return false; // failure to read a name/value
+                    }
+                    break;
+                case '"':
+                    // An error if we get this while reading the name
+                    if (readingName) {
+#if WEBDUINO_SERIAL_DEBUGGING > 1
+                        Serial.println("\n ****** unexpected \"");
+#endif
+                        return false; // error
+                    }
+                    quoted = true;
+                    break;
+                case ';':
+                    // Consume these seperators; if we are reading the value, then we are done
+                    if (!readingName) {
+                        // This will cause us to read an empty value if we get: "foo=;", which I think is right
+                        done = true;
+                    }
+                    break;
+                case ' ':
+                case '\t':
+                    // consume whitespace
+                    break;
+                case '=':
+                    // Now reading the value
+                    if (readingName) {
+                        readingName = false;
+                    } else {
+#if WEBDUINO_SERIAL_DEBUGGING > 1
+                        Serial.println("\n ****** unexpected =");
+#endif
+                        return false; // error condition
+                    }
+                    break;
+                default: {
+                    // valid character
+                    if (readingName) {
+                        if (nameLen > 0) {
+                            *name = ch;
+                            name++;
+                            nameLen--;
+                        }
+                    } else {
+                        // value
+                        if (valueLen > 0) {
+                            *value = ch;
+                            value++;
+                            valueLen--;
+                        }
+                    }
+                }
+            }
+        }
+    } while (!done);
+    
+    
+    return done;
+    
+    
 }
 
 /* Retrieve a parameter that was encoded as part of the URL, stored in
@@ -1075,6 +1205,210 @@ void WebServer::getRequest(WebServer::ConnectionType &type,
     *request = 0;
 }
 
+#if WEBDUINO_SUPPORT_CONTENT_TYPE
+void WebServer::readContentType(bool readBoundry) {
+    int valueLen = WEBDUINO_CONTENT_TYPE_BUFFER_SIZE;
+    memset(m_contentType, 0, valueLen);
+    valueLen--; // null terminator
+
+    char *value = m_contentType;
+    int ch;
+    // absorb whitespace
+    do
+    {
+        ch = read();
+    } while (ch == ' ' || ch == '\t');
+    
+    // read rest of line
+    bool typeIsRead = false;
+    do
+    {
+        if (typeIsRead && readBoundry) {
+            // Read the boundary and save a pointer to it
+#define NAME_LEN 9
+            char name[NAME_LEN];
+            memset(m_contentBoundary, 0, WEBDUINO_CONTENT_TYPE_BUFFER_SIZE);
+            
+            while (readMultipartFormDataParameters(name, NAME_LEN, m_contentBoundary, WEBDUINO_CONTENT_TYPE_BUFFER_SIZE)) {
+#if WEBDUINO_SERIAL_DEBUGGING > 1
+                Serial.printf("\nread name: '%s', value: %s", name, m_contentBoundary);
+#endif
+                if (strncmp(name, "boundary", NAME_LEN) == 0) {
+                    // Found the boundary.. done
+                    break;
+                } else {
+                    m_contentBoundary[0] = NULL; // didn't find it yet.............
+                }
+            }
+        }
+        
+        if (ch == ' ' || ch == '\t') {
+            // ignore spaces
+            if (m_contentBoundary) {
+                // stop reading the boundary
+                valueLen = 0;
+            }
+            
+        } else if (valueLen > 1) {
+            if (ch == ';') {
+                // Replace it with NULL
+                typeIsRead = true; // has to be true
+                ch = NULL;
+                if (m_contentBoundary != NULL) {
+                    valueLen = 1; // done reading...but go to the newline
+                }
+            }
+            *value = ch;
+            value++;
+            --valueLen;
+        }
+        ch = read();
+    } while (ch != '\r' && ch != -1);
+    push(ch);
+}
+
+char *WebServer::getContentType() {
+    return m_contentType;
+}
+
+// http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
+bool WebServer::skipToNextMultipartBoundaryStart() {
+    if (expect("--") && expect(m_contentBoundary)) {
+        if (expect(CRLF)) {
+            // Push it back so I can read two of them in a row to signify data start
+            push(LF);
+            push(CR);
+            return true;
+        } else {
+            return false; // bad...
+        }
+    } else {
+        char c = read();
+        if (c == -1) {
+            return false;
+        } else {
+         // consume it
+        }
+    }
+}
+
+bool WebServer::readMultipartFormDataName(char *name, int nameLength, char *filename, int filenameLength) {
+//    Serial.printf("\n readMultipartFormDataStart boundary: %s\n", m_contentBoundary);
+    if (m_readingContent && m_contentBoundary && m_contentLength > 0) {
+        // boundary, then a CRLF
+        ASSERT(name != NULL);
+        memset(name, 0, nameLength);
+        if (filename) {
+            memset(filename, 0, filenameLength);
+        }
+        while (1) {
+            // first see if we are done
+            if (m_contentLength == 0) {
+                return false; // yup done...
+            }
+            if (expect(CRLF CRLF)) {
+                // Two line feeds...time for content
+//                Serial.println(" =============== time for content");
+                return true;
+            }
+            if (expect("Content-Disposition: form-data")) {
+               // Serial.println("       --------------- content-disp...");
+                // Try reading the parameters
+                char nameBuffer[9]; // filename plus NULL
+                // Uh, this implies name is always first
+                char valueBuffer[64]; // yeah yeah...hardcoded
+                while (readMultipartFormDataParameters(nameBuffer, 9, valueBuffer, 64)) {
+#define MIN(a,b) ((a<b) ? a : b)
+                    if (strncmp(nameBuffer, "name", 4) == 0) {
+                        // Found the name
+                        strncpy(name, valueBuffer, MIN(strlen(valueBuffer), nameLength));
+                    } else if (filename && strncmp(nameBuffer, "filename", 9) == 0) {
+                        // found the filename; leave it set
+                        strncpy(filename, valueBuffer, MIN(strlen(valueBuffer), filenameLength));
+                    } else {
+#if WEBDUINO_SERIAL_DEBUGGING > 1
+                        Serial.printf("\n *** ignoring parameter with name: %s, value: %s", name, valueBuffer);
+#endif
+                    }
+                }
+                // Serial.println(" -----done form data");
+            } else if (expect("Content-Type:")) {
+                // update the content type...
+                readContentType(false);
+            } else {
+                // consume everything else..ignoring it
+                char c = read();
+                if (c == -1) {
+                    return false; // done...
+                } else {
+                    // debug
+//                    Serial.print(c); // corbin
+                }
+            }
+        }
+    }
+    return false;
+}
+
+
+bool WebServer::readMultipartFormDataContent(char *buffer, int bufferLen, int &amountRead) {
+//    Serial.println("readMultipartFormDataContent");
+    amountRead = 0;
+    if (m_readingContent && m_contentBoundary && m_contentLength > 0) {
+        while (bufferLen > 0) {
+            // if we hit a CRLF followed by "--" and then the boundary, then we are at the end. If we have another "--" then we are done done.
+            // we need to look ahead and do this before we get to the end
+            if (expect(CRLF "--")) {
+                // Could be the content boundary
+                if (expect(m_contentBoundary)) {
+                    // It is...
+//                    Serial.printf("\nFound boundary: %s\n", m_contentBoundary);
+                    // See if we are totally done...
+                    if (expect("--")) {
+                        // Done, tottally!
+//                        Serial.printf("\n FINISHED, left %d\n", m_contentLength);
+                        // consume a CRLF if we have enough
+                        if (m_contentLength >= 2) {
+                            expect(CRLF); // probably this..
+                        }
+                    } else if (expect(CRLF)) {
+//                        Serial.println("\n NOT done???\n");
+                        // Push them back
+                        push(LF);
+                        push(CR);
+                    } else {
+                        // error...
+                    }
+                    return true; // we are done..
+                    // won't get any further...we did returns
+                } else {
+                    // wasn't, push back the CRLF "--" in reverse
+                    push('-');
+                    push('-');
+                    push(LF);
+                    push(CR);
+                }
+            }
+            // Read into the buffer or unil we are done
+            char c = read();
+            if (c == -1) {
+                // done...we should have hit a boundary
+                return false;
+            }
+            *buffer = c;
+            buffer++;
+            amountRead++;
+            bufferLen--; // read till it is 0...
+        }
+        return false; // not done if we got here; the buffer is full
+    } else {
+        return true;
+    }
+}
+
+
+#endif
+
 void WebServer::processHeaders()
 {
     // look for three things: the Content-Length header, the Authorization
@@ -1084,16 +1418,15 @@ void WebServer::processHeaders()
     // otherwise users who don't send an Authorization header would be treated
     // like the last user who tried to authenticate (possibly successful)
     m_authCredentials[0]=0;
-    
+    m_contentLength = 0;
+    m_contentType[0] = 0;
     while (1)
     {
         if (expect("Content-Length:"))
         {
             readInt(m_contentLength);
 #if WEBDUINO_SERIAL_DEBUGGING > 1
-            Serial.print("\n*** got Content-Length of ");
-            Serial.print(m_contentLength);
-            Serial.print(" ***");
+            Serial.printf("\n*** got Content-Length of %d ***", m_contentLength);
 #endif
             continue;
         }
@@ -1102,13 +1435,21 @@ void WebServer::processHeaders()
         {
             readHeader(m_authCredentials,51);
 #if WEBDUINO_SERIAL_DEBUGGING > 1
-            Serial.print("\n*** got Authorization: of ");
-            Serial.print(m_authCredentials);
-            Serial.print(" ***");
+            Serial.printf("\n*** got Authorization: of %s ***", m_authCredentials);
 #endif
             continue;
         }
         
+#if WEBDUINO_SUPPORT_CONTENT_TYPE
+        if (expect("Content-Type:")) {
+            // Read and store the content type, and potential content boundary
+            readContentType(true);
+
+#if WEBDUINO_SERIAL_DEBUGGING > 1
+            Serial.printf("\n*** got content-type: of %s, boundary: %s ****", m_contentType, m_contentBoundary);
+#endif
+        }
+#endif
         if (expect(CRLF CRLF))
         {
             m_readingContent = true;
