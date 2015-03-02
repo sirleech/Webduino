@@ -258,6 +258,7 @@ public:
     
 #if USE_CC3000_LIBRARY
     Adafruit_CC3000 *getWifiManager(); // Allows setup of the network or direct access
+    Client *getClient(); // Allows reading the rest of the data till connection close
 #endif
     
 private:

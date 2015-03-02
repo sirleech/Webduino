@@ -408,6 +408,13 @@ void WebServer::processConnection()
     processConnection(request, &request_len);
 }
 
+#if USE_CC3000_LIBRARY
+Client *WebServer::getClient() {
+    return &m_client;
+}
+
+#endif
+
 void WebServer::processConnection(char *buff, int *bufflen)
 {
 #if USE_ETHERNET_LIBRARY
