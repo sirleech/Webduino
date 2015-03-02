@@ -1,8 +1,28 @@
+//
+//  ___FILENAME___
+//
+//  Project ___PROJECTNAME___
+//  Created by ___FULLUSERNAME___ on ___DATE___
+//  Copyright (c) ___YEAR___ ___ORGANIZATIONNAME___
+//
 
+/* NOTES: For code completion to work:
+    1. Select the Project
+    2. Select the target named "Index"
+    3. Select Build Phase
+    4. Expand it; hit plus at the bottom 
+    5. Add all *.c, *.cpp files to it
+ 
+
+ To Make/Compile, select the target Make.
+ To Upload, select the target Upload.
+*/
+
+#include "HelloWorld.h"
 #include "Wire.h"
 #include <stdint.h>
-#include "SPI.h"
-#include "Adafruit_CC3000.h"
+
+#define WEBDUINO_FAVICON_DATA ""
 #include "WebServer.h"
 
 
@@ -28,7 +48,7 @@ void helloCmd(WebServer &server, WebServer::ConnectionType type, char *, bool)
         /* this defines some HTML text in read-only memory aka PROGMEM.
          * This is needed to avoid having the string copied to our limited
          * amount of RAM. */
-        const char *helloMsg = "<html><body><h1>Hello, World!</h1></body></html>";
+        const char *helloMsg = "<html><body><h1>Hello, Costanza!</h1></body></html>";
 
         /* this is a special form of print that outputs from PROGMEM */
         server.print(helloMsg);

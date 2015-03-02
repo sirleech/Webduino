@@ -1,0 +1,38 @@
+//
+//  Teensy 3.1 config
+//  Board configuration file
+
+//  Created by Rei VILO on 05/04/12
+//  Copyright © 2014 corbin dunn
+//
+
+
+// Board indentifier
+// see Boards.txt for teensy31.name=Teensy 3.1, in /Applications/Arduino.app/Contents/Resources/Java/hardware/teensy
+//
+BOARD_TAG  = teensy31
+
+// Port (optionnal)
+// most common are /dev/tty.usbserial*, /dev/tty.usbmodem* or /dev/tty.uart*
+//
+BOARD_PORT = /dev/tty.usbmodem*
+
+// References for Xcode code-sense
+// see Boards.txt for <tag>.build.mcu=<GCC_PREPROCESSOR_DEFINITIONS>
+// specify ARDUINO_APP for Arduino, MPIDE_APP for Mpide, 
+//   WIRING_APP for Wiring, ENERGIA_APP for Energia, MAPLE_APP for MapleIDE
+//
+GCC_PREPROCESSOR_DEFINITIONS = __MK20DX256__
+// Sort of duplicated... this needs to be thought out better
+ARDUINO_APP = /Applications/Arduino.app
+APPLICATION_PATH = $(ARDUINO_APP)/Contents/Resources/Java
+HEADER_SEARCH_PATHS = $(APPLICATION_PATH)/hardware/teensy/cores/teensy3/** $(SKETCHBOOK_DIR)/Libraries/**
+
+// From the boards.txt for teensy:
+//#teensy31.menu.speed.96.build.f_cpu=96000000
+//#teensy31.menu.speed.48.build.f_cpu=48000000
+//#teensy31.menu.speed.24.build.f_cpu=24000000
+//#overclock (this is an option in the Arduino IDE for Teensy)
+F_CPU = 96000000UL
+
+
