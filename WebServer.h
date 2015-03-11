@@ -77,14 +77,6 @@
 #define WEBDUINO_SERVER_ERROR_MESSAGE "<h1>500 Internal Server Error</h1>"
 #endif // WEBDUINO_SERVER_ERROR_MESSAGE
 
-#ifndef WEBDUINO_BAD_REQUEST_ERROR_MESSAGE
-#define WEBDUINO_BARD_REQUEST_ERROR_MESSAGE "<h1>400 Bad Request</h1>"
-#endif // WEBDUINO_SERVER_ERROR_MESSAGE
-
-#ifndef WEBDUINO_UNSUPPORTED_MEDIA_TYPE_ERROR_MESSAGE
-#define WEBDUINO_UNSUPPORTED_MEDIA_TYPE_ERROR_MESSAGE "<h1>415 Unsupported Media Type</h1>"
-#endif // WEBDUINO_UNSUPPORTED_MEDIA_TYPE_ERROR_MESSAGE
-
 #ifndef WEBDUINO_OUTPUT_BUFFER_SIZE
 #define WEBDUINO_OUTPUT_BUFFER_SIZE 32
 #endif // WEBDUINO_OUTPUT_BUFFER_SIZE
@@ -273,12 +265,6 @@ public:
   // returns true if we're not at end-of-stream
   bool readPOSTparam(char *name, int nameLen, char *value, int valueLen);
 
-
-  //Read POST Body
-  // returns true if we're not at end-of-stream
-  bool readPOSTbody(char *body, int bodyLen);
-
-
   // Read the next keyword parameter from the buffer filled by getRequest.
   //
   // returns 0 if everything weent okay,  non-zero if not
@@ -294,20 +280,11 @@ public:
   // returns true if strings match, false otherwise
   bool checkCredentials(const char authCredentials[45]);
 
-  // returns true if strings contains, false otherwise
-  bool checkContentType(const char expectedContentType[50]);
-
   // output headers and a message indicating a server error
   void httpFail();
 
   // output headers and a message indicating "401 Unauthorized"
   void httpUnauthorized();
-
-  // output headers and a message indicating "415 Unsupported Media Type"
-  void httpUnsupportedMediaType();
-
-  // output headers and a message indicating "400 Bad Request"
-  void httpBadReqeust();
 
   // output headers and a message indicating "500 Internal Server Error"
   void httpServerError();
@@ -348,8 +325,6 @@ private:
 
   int m_contentLength;
   char m_authCredentials[51];
-  char m_ContentType[51];
-
   bool m_readingContent;
 
   Command *m_failureCmd;
@@ -674,24 +649,6 @@ bool WebServer::checkCredentials(const char authCredentials[45])
   return false;
 }
 
-bool WebServer::checkContentType(const char expectedContentType[50])
-{
-
-#if WEBDUINO_SERIAL_DEBUGGING > 1
-    Serial.print("m_ContentType::");
-	Serial.println(m_ContentType);
-	Serial.print("expectedContentType::");
-	Serial.println(expectedContentType);
-
-	Serial.println(strstr(m_ContentType, expectedContentType));
-
-#endif
-
-  if( strstr(m_ContentType, expectedContentType) != NULL)
-     return true;
-  else
-     return false;
-}
 void WebServer::httpFail()
 {
   P(failMsg1) = "HTTP/1.0 400 Bad Request" CRLF;
@@ -735,40 +692,6 @@ void WebServer::favicon(ConnectionType type)
     P(faviconIco) = WEBDUINO_FAVICON_DATA;
     writeP(faviconIco, sizeof(faviconIco));
   }
-}
-
-void WebServer::httpBadReqeust()
-{
-  P(badRequestMsg1) = "HTTP/1.0 400 Bad Request" CRLF;
-  printP(badRequestMsg1);
-
-#ifndef WEBDUINO_SUPRESS_SERVER_HEADER
-  printP(webServerHeader);
-#endif
-
-  P(badRequestMsg2) =
-    "Content-Type: text/html" CRLF
-    CRLF
-    WEBDUINO_BARD_REQUEST_ERROR_MESSAGE;
-
-  printP(badRequestMsg2);
-}
-
-void WebServer::httpUnsupportedMediaType()
-{
-  P(unsupportedMsg1) = "HTTP/1.0 415 Unsupported Media Type" CRLF;
-  printP(unsupportedMsg1);
-
-#ifndef WEBDUINO_SUPRESS_SERVER_HEADER
-  printP(webServerHeader);
-#endif
-
-  P(unsupportedMsg2) =
-    "Content-Type: text/html" CRLF
-    CRLF
-    WEBDUINO_UNSUPPORTED_MEDIA_TYPE_ERROR_MESSAGE;
-
-  printP(unsupportedMsg2);
 }
 
 void WebServer::httpUnauthorized()
@@ -1103,50 +1026,6 @@ bool WebServer::readPOSTparam(char *name, int nameLen,
   }
 }
 
-bool WebServer::readPOSTbody(char *body, int bodyLen)
-{
-  // assume name is at current place in stream
-  int ch;
-  // to not to miss the last parameter
-  bool foundSomething = false;
-
-  // clear out body so they'll be NUL terminated
-  memset(body, 0, bodyLen);
-
-
-  // decrement length so we don't write into NUL terminator
-  --bodyLen;
-
-
-  while ((ch = read()) != -1)
-  {
-    foundSomething = true;
-    // output the new character into the appropriate buffer or drop it if
-    // there's no room in either one.  This code will malfunction in the
-    // case where the body is too long to fit into the body buffer,
-    // there's no harm.
-    if (bodyLen > 0)
-    {
-      *body++ = ch;
-      --bodyLen;
-    }
-
-  }
-
-  if (foundSomething)
-  {
-    // if we get here, we have one last parameter to serve
-    return true;
-  }
-  else
-  {
-    // if we get here, we hit the end-of-file, so POST is over and there
-    // are no more parameters
-    return false;
-  }
-
-}
-
 /* Retrieve a parameter that was encoded as part of the URL, stored in
  * the buffer pointed to by *tail.  tail is updated to point just past
  * the last character read from the buffer. */
@@ -1355,21 +1234,9 @@ void WebServer::processHeaders()
   // otherwise users who don't send an Authorization header would be treated
   // like the last user who tried to authenticate (possibly successful)
   m_authCredentials[0]=0;
-  m_ContentType[0]=0;
+
   while (1)
   {
-
-  if (expect("Content-Type:"))
-    {
-      readHeader(m_ContentType,51);
-#if WEBDUINO_SERIAL_DEBUGGING > 1
-      Serial.print("\n*** got ContentType: ");
-      Serial.print(m_ContentType);
-      Serial.print(" ***");
-#endif
-      continue;
-    }
-
     if (expect("Content-Length:"))
     {
       readInt(m_contentLength);
